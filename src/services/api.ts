@@ -92,14 +92,7 @@ class ApiService {
     return data;
   }
 
-  async syncGoogleUser(email: string, displayName?: string): Promise<{ user: User; token: string }> {
-    const data = await this.request<{ user: User; token: string }>('/auth/google-sync', {
-      method: 'POST',
-      body: JSON.stringify({ email, displayName }),
-    });
-    this.setToken(data.token);
-    return data;
-  }
+  
 
   async syncSupabaseUser(data: {
     id: string;

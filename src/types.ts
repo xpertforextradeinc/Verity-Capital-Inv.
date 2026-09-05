@@ -235,43 +235,6 @@ export interface FactualCryptoAsset {
   institutionalCustodianSupport: string[];
 }
 
-// Google Drive Integration Types
-export interface DriveFile {
-  id: string;
-  name: string;
-  mimeType: string;
-  size?: string;
-  modifiedTime?: string;
-  createdTime?: string;
-  webViewLink?: string;
-  webContentLink?: string;
-  iconLink?: string;
-  thumbnailLink?: string;
-  parents?: string[];
-  owners?: { displayName: string; emailAddress: string; photoLink?: string }[];
-  starred?: boolean;
-  trashed?: boolean;
-}
-
-export interface DriveAboutUser {
-  displayName: string;
-  emailAddress: string;
-  photoLink?: string;
-  me?: boolean;
-}
-
-export interface DriveStorageQuota {
-  limit?: string;
-  usage?: string;
-  usageInDrive?: string;
-  usageInDriveTrash?: string;
-}
-
-export interface DriveAboutInfo {
-  user?: DriveAboutUser;
-  storageQuota?: DriveStorageQuota;
-}
-
 // Interactive Institutional Broker Assistant Types
 export interface BrokerChatMessage {
   id: string;

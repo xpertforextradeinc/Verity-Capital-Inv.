@@ -24,14 +24,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
           
           <h1 className="text-5xl lg:text-7xl font-bold text-white leading-tight tracking-tight">
-            Next-Generation <br />
+            Confident, Institutional-Grade <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">
-              Digital Assets
+              Execution & Custody
             </span>
           </h1>
           
           <p className="text-lg text-zinc-400 max-w-xl leading-relaxed">
-            Secure, high-performance execution and custody for institutional clients. Access global crypto liquidity with uncompromised compliance.
+            Built for professional traders who demand precision, liquidity, and regulatory strength. Access global crypto markets with uncompromised compliance.
           </p>
           
           <div className="flex items-center space-x-4 pt-4">

@@ -17,8 +17,8 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { User } from '../../types.ts';
-import { googleSignIn } from '../../services/firebase.ts';
-import { GoogleSignInButton } from '../common/GoogleSignInButton.tsx';
+
+
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -27,7 +27,7 @@ interface AuthModalProps {
   onLogin: (email: string, password: string) => Promise<void>;
   onRegister: (firstName: string, lastName: string, email: string, password: string) => Promise<void>;
   onSwitchDemo: (role: 'CUSTOMER' | 'ADMIN') => Promise<void>;
-  onGoogleSignIn?: (email: string, displayName?: string) => Promise<void>;
+  
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
@@ -37,7 +37,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onLogin,
   onRegister,
   onSwitchDemo,
-  onGoogleSignIn,
+  
 }) => {
   const [mode, setMode] = useState<'login' | 'register' | 'forgot'>(initialMode);
   
@@ -153,23 +153,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
-  const handleGoogleAuth = async () => {
-    setErrorMsg(null);
-    setIsSubmitting(true);
-    try {
-      const res = await googleSignIn();
-      if (res && res.user) {
-        if (onGoogleSignIn) {
-          await onGoogleSignIn(res.user.email || '', res.user.displayName || undefined);
-        }
-        onClose();
-      }
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Google authentication failed');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  
 
   const renderRegisterStep = () => {
     switch (registerStep) {
@@ -554,7 +538,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
 
               <div className="flex justify-center">
-                <GoogleSignInButton onClick={handleGoogleAuth} isLoading={isSubmitting} text="Continue with Google" className="w-full !max-w-none" />
+
               </div>
             </form>
           )}

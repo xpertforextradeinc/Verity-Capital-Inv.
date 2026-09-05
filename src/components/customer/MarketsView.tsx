@@ -1,193 +1,172 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Search,
-  Filter,
   TrendingUp,
   TrendingDown,
-  ArrowUpRight,
-  ArrowDownRight,
-  Zap,
-  Bookmark,
-  Sparkles,
-  BarChart2,
-  Clock,
+  Activity,
+  Server,
+  Shield,
   Layers,
-  Info
+  ArrowUpRight,
+  ArrowDownRight
 } from 'lucide-react';
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer
-} from 'recharts';
-import { Instrument, AssetType } from '../../types.ts';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
-interface MarketsViewProps {
-  instruments: Instrument[];
-  selectedInstrument: Instrument | null;
-  onSelectInstrument: (inst: Instrument) => void;
-  onOpenTrade: (inst: Instrument) => void;
-  onToggleWatchlist?: (instrumentId: string) => void;
-  onNavigateAiInsight?: (inst: Instrument) => void;
-  isWatchlisted?: (instrumentId: string) => boolean;
+interface MarketData {
+  symbol: string;
+  lastPrice: string;
+  priceChangePercent: string;
+  priceChange: string;
+  volume: string;
+  highPrice: string;
+  lowPrice: string;
 }
 
-export const MarketsView: React.FC<MarketsViewProps> = ({
-  instruments,
-  selectedInstrument,
-  onSelectInstrument,
-  onOpenTrade,
-  onToggleWatchlist,
-  onNavigateAiInsight,
-  isWatchlisted,
-}) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedType, setSelectedType] = useState<string>('ALL');
-  const [timeframe, setTimeframe] = useState<'1D' | '1W' | '1M' | '1Y'>('1D');
+interface OrderBook {
+  bids: [string, string][]; // [price, quantity]
+  asks: [string, string][];
+}
 
-  const active = selectedInstrument || instruments[0];
+export const MarketsView: React.FC = () => {
+  const [markets, setMarkets] = useState<MarketData[]>([]);
+  const [orderBook, setOrderBook] = useState<OrderBook>({ bids: [], asks: [] });
+  const [selectedPair, setSelectedPair] = useState<string>('BTCUSDT');
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Filter instruments
-  const filteredInstruments = useMemo(() => {
-    return instruments.filter((inst) => {
-      const matchesType = selectedType === 'ALL' || inst.assetType === selectedType;
-      const matchesQuery =
-        inst.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        inst.name.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesType && matchesQuery;
-    });
-  }, [instruments, selectedType, searchQuery]);
+  // Simulated chart data for the mini candlestick/area chart
+  const [chartData, setChartData] = useState<{ time: string; price: number }[]>([]);
 
-  // Generate synthetic order book for simulated depth view
-  const orderBook = useMemo(() => {
-    if (!active) return { bids: [], asks: [] };
-    const p = active.price;
-    const spread = p * 0.0008;
-    const seed = active.id.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0) + Math.round(p * 100);
-    const depth = (base: number, range: number) => base + ((seed * range) % 100);
-    const bids = [
-      { price: p - spread * 1, size: depth(100, 400) },
-      { price: p - spread * 2, size: depth(200, 600) },
-      { price: p - spread * 3, size: depth(300, 900) },
-      { price: p - spread * 4, size: depth(400, 1200) },
-    ];
-    const asks = [
-      { price: p + spread * 1, size: depth(100, 350) },
-      { price: p + spread * 2, size: depth(200, 550) },
-      { price: p + spread * 3, size: depth(300, 850) },
-      { price: p + spread * 4, size: depth(400, 1100) },
-    ];
-    return { bids, asks };
-  }, [active?.price]);
+  useEffect(() => {
+    let isMounted = true;
+    
+    const fetchMarkets = async () => {
+      try {
+        const symbols = encodeURIComponent('["BTCUSDT","ETHUSDT","SOLUSDT"]');
+        const res = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbols=${symbols}`);
+        const data = await res.json();
+        
+        if (isMounted && Array.isArray(data)) {
+          setMarkets(data);
+          
+          // Generate a synthetic micro-chart based on the current price for visual flair
+          const activeMarket = data.find(m => m.symbol === selectedPair);
+          if (activeMarket) {
+            const basePrice = parseFloat(activeMarket.lastPrice);
+            const history = Array.from({ length: 24 }).map((_, i) => {
+              const variance = basePrice * 0.005;
+              const val = basePrice + (Math.random() * variance * 2 - variance);
+              return { time: `${i}:00`, price: val };
+            });
+            setChartData(history);
+          }
+        }
+
+        const depthRes = await fetch(`https://api.binance.com/api/v3/depth?symbol=${selectedPair}&limit=10`);
+        const depthData = await depthRes.json();
+        
+        if (isMounted && depthData.bids && depthData.asks) {
+          setOrderBook({
+            bids: depthData.bids.slice(0, 8),
+            asks: depthData.asks.slice(0, 8),
+          });
+        }
+      } catch (err) {
+        console.error('Failed to fetch market data:', err);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    fetchMarkets();
+    const interval = setInterval(fetchMarkets, 5000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [selectedPair]);
+
+  const activeMarket = markets.find(m => m.symbol === selectedPair) || markets[0];
+  const isPositive = activeMarket ? parseFloat(activeMarket.priceChangePercent) >= 0 : true;
+
+  if (isLoading && !activeMarket) {
+    return (
+      <div className="flex items-center justify-center h-[50vh]">
+        <div className="w-8 h-8 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Header & Filter Controls */}
-      <div className="bg-[#0B0F19] border border-zinc-800 rounded-2xl p-5 shadow-xl flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-white tracking-tight">Market Instruments</h1>
-          <p className="text-xs text-zinc-400 mt-0.5">
-            Real-time simulated pricing across stocks, crypto, ETFs, and foreign exchange
-          </p>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Institutional Markets</h1>
+          <p className="text-zinc-400 mt-1">Live digital asset liquidity and execution venues.</p>
         </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Search Box */}
-          <div className="relative">
-            <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-2.5" />
-            <input
-              type="text"
-              placeholder="Search symbol or name..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-zinc-900 border border-zinc-700/80 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 w-48 sm:w-60"
-            />
+        
+        {/* Institutional Metrics */}
+        <div className="flex items-center gap-4 bg-[#090D14] border border-zinc-800/80 px-4 py-2.5 rounded-xl text-xs font-mono">
+          <div className="flex items-center gap-2 text-zinc-300">
+            <Activity className="w-4 h-4 text-emerald-500" />
+            <div>
+              <div className="text-zinc-500 text-[9px] uppercase tracking-wider">Latency</div>
+              <div className="font-bold">12ms</div>
+            </div>
           </div>
-
-          {/* Asset Category Pills */}
-          <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-xl p-1 text-xs">
-            {['ALL', 'STOCK', 'CRYPTO', 'ETF', 'FOREX'].map((type) => (
-              <button
-                key={type}
-                onClick={() => setSelectedType(type)}
-                className={`px-3 py-1 rounded-lg font-medium transition-all cursor-pointer ${
-                  selectedType === type
-                    ? 'bg-zinc-800 text-white font-semibold shadow-sm'
-                    : 'text-zinc-400 hover:text-zinc-200'
-                }`}
-              >
-                {type}
-              </button>
-            ))}
+          <div className="w-px h-8 bg-zinc-800" />
+          <div className="flex items-center gap-2 text-zinc-300">
+            <Server className="w-4 h-4 text-emerald-500" />
+            <div>
+              <div className="text-zinc-500 text-[9px] uppercase tracking-wider">Uptime</div>
+              <div className="font-bold">99.999%</div>
+            </div>
+          </div>
+          <div className="w-px h-8 bg-zinc-800" />
+          <div className="flex items-center gap-2 text-zinc-300">
+            <Shield className="w-4 h-4 text-emerald-500" />
+            <div>
+              <div className="text-zinc-500 text-[9px] uppercase tracking-wider">Custody</div>
+              <div className="font-bold">SECURED</div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Main Terminal View: 2-Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column (5 cols): Instruments Browser List */}
-        <div className="lg:col-span-5 bg-[#0B0F19] border border-zinc-800 rounded-2xl shadow-xl overflow-hidden flex flex-col h-[640px]">
-          <div className="p-4 border-b border-zinc-800 flex items-center justify-between text-xs text-zinc-400 font-medium">
-            <span>Asset ({filteredInstruments.length})</span>
-            <span>Price / 24h Movement</span>
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+        
+        {/* Market List */}
+        <div className="xl:col-span-4 bg-[#090D14] border border-zinc-800/80 rounded-2xl overflow-hidden shadow-xl flex flex-col h-[700px]">
+          <div className="p-4 border-b border-zinc-800/80 flex justify-between text-xs text-zinc-500 font-semibold uppercase tracking-wider">
+            <span>Market</span>
+            <span>Last / 24h</span>
           </div>
-
-          <div className="overflow-y-auto divide-y divide-zinc-800/60 flex-1">
-            {filteredInstruments.map((inst) => {
-              const isSelected = active?.id === inst.id;
-              const isPositive = inst.changePercent >= 0;
-
+          <div className="overflow-y-auto divide-y divide-zinc-800/50 flex-1">
+            {markets.map((m) => {
+              const isSel = selectedPair === m.symbol;
+              const pos = parseFloat(m.priceChangePercent) >= 0;
+              const name = m.symbol.replace('USDT', '');
+              
               return (
                 <div
-                  key={inst.id}
-                  onClick={() => onSelectInstrument(inst)}
-                  className={`p-3.5 flex items-center justify-between transition-colors cursor-pointer ${
-                    isSelected ? 'bg-zinc-800/80 border-l-2 border-emerald-400' : 'hover:bg-zinc-900/60'
+                  key={m.symbol}
+                  onClick={() => setSelectedPair(m.symbol)}
+                  className={`p-4 flex items-center justify-between cursor-pointer transition-colors ${
+                    isSel ? 'bg-indigo-600/10 border-l-2 border-indigo-500' : 'hover:bg-zinc-900/50 border-l-2 border-transparent'
                   }`}
                 >
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center font-mono font-bold text-xs text-zinc-200">
-                      {inst.symbol.slice(0, 2)}
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center font-bold text-xs">
+                      {name[0]}
                     </div>
                     <div>
-                      <div className="flex items-center space-x-1.5 font-mono">
-                        <span className="font-bold text-sm text-white">{inst.symbol}</span>
-                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-400">
-                          {inst.assetType}
-                        </span>
-                        {inst.status === 'HALTED' && (
-                          <span className="text-[9px] px-1 py-0.2 rounded bg-rose-950 text-rose-400 border border-rose-800 font-bold">
-                            HALTED
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-[11px] text-zinc-400 truncate max-w-[150px]">
-                        {inst.name}
-                      </div>
+                      <div className="font-bold text-white font-mono">{name}/USD</div>
+                      <div className="text-[10px] text-zinc-500 mt-0.5">Vol: {parseFloat(m.volume).toLocaleString(undefined, {maximumFractionDigits: 0})}</div>
                     </div>
                   </div>
-
                   <div className="text-right font-mono">
-                    <div className="font-bold text-sm text-white">
-                      ${inst.price.toLocaleString('en-US', {
-                        minimumFractionDigits: inst.assetType === 'FOREX' ? 4 : 2,
-                        maximumFractionDigits: inst.assetType === 'FOREX' ? 4 : 2,
-                      })}
-                    </div>
-                    <div
-                      className={`text-xs font-semibold flex items-center justify-end ${
-                        isPositive ? 'text-emerald-400' : 'text-rose-400'
-                      }`}
-                    >
-                      {isPositive ? (
-                        <ArrowUpRight className="w-3 h-3 mr-0.5" />
-                      ) : (
-                        <ArrowDownRight className="w-3 h-3 mr-0.5" />
-                      )}
-                      {isPositive ? '+' : ''}
-                      {inst.changePercent.toFixed(2)}%
+                    <div className="font-bold text-white">${parseFloat(m.lastPrice).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                    <div className={`text-xs font-semibold flex items-center justify-end mt-0.5 ${pos ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      {pos ? <ArrowUpRight className="w-3 h-3 mr-0.5" /> : <ArrowDownRight className="w-3 h-3 mr-0.5" />}
+                      {Math.abs(parseFloat(m.priceChangePercent)).toFixed(2)}%
                     </div>
                   </div>
                 </div>
@@ -196,206 +175,132 @@ export const MarketsView: React.FC<MarketsViewProps> = ({
           </div>
         </div>
 
-        {/* Right Column (7 cols): Selected Instrument Deep View */}
-        {active && (
-          <div className="lg:col-span-7 space-y-6">
-            {/* Instrument Detail Card */}
-            <div className="bg-[#0B0F19] border border-zinc-800 rounded-2xl p-5 shadow-xl">
-              {/* Header Details */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-zinc-800">
+        {/* Selected Market Detail */}
+        {activeMarket && (
+          <div className="xl:col-span-8 space-y-6">
+            <div className="bg-[#090D14] border border-zinc-800/80 rounded-2xl p-6 shadow-xl">
+              
+              <div className="flex flex-wrap gap-6 border-b border-zinc-800/80 pb-6 mb-6">
                 <div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 font-mono font-semibold">
-                      {active.assetType}
-                    </span>
-                    <span className="text-xs text-zinc-400 font-mono">Simulated Quote</span>
-                  </div>
-                  <div className="flex items-center space-x-3 mt-1">
-                    <h2 className="text-2xl font-bold font-mono text-white tracking-tight">
-                      {active.symbol}
-                    </h2>
-                    <span className="text-sm text-zinc-400">{active.name}</span>
-                  </div>
+                  <h2 className="text-3xl font-bold font-mono text-white tracking-tight">
+                    {activeMarket.symbol.replace('USDT', '')}/USD
+                  </h2>
+                  <div className="text-zinc-500 text-sm mt-1">Live Global Pricing</div>
                 </div>
-
-                <div className="flex items-center space-x-2">
-                  {onToggleWatchlist && (
-                    <button
-                      onClick={() => onToggleWatchlist(active.id)}
-                      className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-white transition-colors cursor-pointer"
-                      title="Add to Watchlist"
-                    >
-                      <Bookmark className="w-4 h-4" />
-                    </button>
-                  )}
-                  {onNavigateAiInsight && (
-                    <button
-                      onClick={() => onNavigateAiInsight(active)}
-                      className="px-3 py-2 rounded-xl bg-indigo-950/50 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-900/50 text-xs font-semibold flex items-center space-x-1.5 transition-colors cursor-pointer"
-                    >
-                      <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-                      <span>AI Insight</span>
-                    </button>
-                  )}
-                  <button
-                    onClick={() => onOpenTrade(active)}
-                    className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-xs font-bold flex items-center space-x-1.5 shadow-lg shadow-emerald-500/20 transition-all cursor-pointer"
-                  >
-                    <Zap className="w-3.5 h-3.5 fill-current" />
-                    <span>Simulate Trade</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Live Price & 24h Stats Row */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-4 border-b border-zinc-800 text-xs font-mono">
-                <div>
-                  <span className="text-zinc-500 text-[10px] uppercase">Current Price</span>
-                  <div className="text-lg font-bold text-white mt-0.5">
-                    ${active.price.toFixed(2)}
+                <div className="ml-auto text-right font-mono">
+                  <div className="text-3xl font-bold text-white">
+                    ${parseFloat(activeMarket.lastPrice).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                   </div>
-                </div>
-                <div>
-                  <span className="text-zinc-500 text-[10px] uppercase">24h Net Change</span>
-                  <div
-                    className={`text-lg font-bold mt-0.5 ${
-                      active.changePercent >= 0 ? 'text-emerald-400' : 'text-rose-400'
-                    }`}
-                  >
-                    {active.changePercent >= 0 ? '+' : ''}${active.changeAmount.toFixed(2)} ({active.changePercent}%)
-                  </div>
-                </div>
-                <div>
-                  <span className="text-zinc-500 text-[10px] uppercase">24h Range</span>
-                  <div className="text-xs font-semibold text-zinc-200 mt-1">
-                    ${active.low24h.toFixed(2)} - ${active.high24h.toFixed(2)}
-                  </div>
-                </div>
-                <div>
-                  <span className="text-zinc-500 text-[10px] uppercase">24h Volume</span>
-                  <div className="text-xs font-semibold text-zinc-200 mt-1">
-                    {active.volume24h.toLocaleString()}
+                  <div className={`text-sm font-semibold flex items-center justify-end mt-1 ${isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    {isPositive ? '+' : ''}{parseFloat(activeMarket.priceChangePercent).toFixed(2)}% 
+                    <span className="text-zinc-500 ml-2">(${Math.abs(parseFloat(activeMarket.priceChange)).toLocaleString(undefined, {minimumFractionDigits: 2})})</span>
                   </div>
                 </div>
               </div>
 
-              {/* Interactive Price Chart */}
-              <div className="pt-4">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-bold text-zinc-300">Simulated Price Trajectory</span>
-                  <div className="flex items-center space-x-1 bg-zinc-900 border border-zinc-800 rounded-lg p-0.5 text-[11px] font-mono">
-                    {(['1D', '1W', '1M', '1Y'] as const).map((t) => (
-                      <button
-                        key={t}
-                        onClick={() => setTimeframe(t)}
-                        className={`px-2 py-0.5 rounded cursor-pointer ${
-                          timeframe === t ? 'bg-zinc-800 text-white font-bold' : 'text-zinc-400 hover:text-zinc-200'
-                        }`}
-                      >
-                        {t}
-                      </button>
-                    ))}
-                  </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8 font-mono">
+                <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800/50">
+                  <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1">24h High</div>
+                  <div className="text-sm font-semibold text-zinc-200">${parseFloat(activeMarket.highPrice).toLocaleString(undefined, {maximumFractionDigits: 2})}</div>
                 </div>
+                <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800/50">
+                  <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1">24h Low</div>
+                  <div className="text-sm font-semibold text-zinc-200">${parseFloat(activeMarket.lowPrice).toLocaleString(undefined, {maximumFractionDigits: 2})}</div>
+                </div>
+                <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800/50">
+                  <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1">24h Volume (Base)</div>
+                  <div className="text-sm font-semibold text-zinc-200">{parseFloat(activeMarket.volume).toLocaleString(undefined, {maximumFractionDigits: 2})}</div>
+                </div>
+                <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800/50">
+                  <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1">Liquidity Score</div>
+                  <div className="text-sm font-semibold text-emerald-400">Excellent</div>
+                </div>
+              </div>
 
-                <div className="h-56 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={active.history} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                      <defs>
-                        <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop
-                            offset="5%"
-                            stopColor={active.changePercent >= 0 ? '#10B981' : '#F43F5E'}
-                            stopOpacity={0.3}
-                          />
-                          <stop
-                            offset="95%"
-                            stopColor={active.changePercent >= 0 ? '#10B981' : '#F43F5E'}
-                            stopOpacity={0.0}
-                          />
-                        </linearGradient>
-                      </defs>
-                      <XAxis dataKey="timestamp" stroke="#52525B" fontSize={10} tickLine={false} />
-                      <YAxis
-                        domain={['auto', 'auto']}
-                        stroke="#52525B"
-                        fontSize={10}
-                        tickLine={false}
-                        tickFormatter={(val) => `$${Number(val).toFixed(1)}`}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: '#18181B',
-                          borderColor: '#27272A',
-                          borderRadius: '8px',
-                          fontSize: '12px',
-                          fontFamily: 'monospace',
-                        }}
-                        formatter={(value: any) => [`$${Number(value).toFixed(2)}`, 'Simulated Price']}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="price"
-                        stroke={active.changePercent >= 0 ? '#10B981' : '#F43F5E'}
-                        strokeWidth={2}
-                        fillOpacity={1}
-                        fill="url(#chartGradient)"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
+              {/* Chart */}
+              <div className="h-64 w-full bg-zinc-900/20 rounded-xl p-2 border border-zinc-800/50">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData}>
+                    <defs>
+                      <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={isPositive ? '#10B981' : '#F43F5E'} stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor={isPositive ? '#10B981' : '#F43F5E'} stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="time" hide />
+                    <YAxis domain={['auto', 'auto']} hide />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#18181B', borderColor: '#27272A', borderRadius: '8px' }}
+                      itemStyle={{ color: '#E4E4E7', fontFamily: 'monospace' }}
+                      formatter={(val: number) => [`$${val.toFixed(2)}`, 'Price']}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="price" 
+                      stroke={isPositive ? '#10B981' : '#F43F5E'} 
+                      strokeWidth={2}
+                      fillOpacity={1} 
+                      fill="url(#colorPrice)" 
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
             </div>
 
-            {/* Simulated Depth & Order Book Preview */}
-            <div className="bg-[#0B0F19] border border-zinc-800 rounded-2xl p-5 shadow-xl">
-              <div className="flex items-center justify-between pb-3 mb-3 border-b border-zinc-800 text-xs font-bold text-white">
-                <span className="flex items-center space-x-1.5">
-                  <Layers className="w-4 h-4 text-cyan-400" />
-                  <span>Simulated Order Book Depth</span>
-                </span>
-                <span className="text-[10px] font-mono text-zinc-400 font-normal">
-                  Simulated Level 2 Book
-                </span>
+            {/* Order Book */}
+            <div className="bg-[#090D14] border border-zinc-800/80 rounded-2xl p-6 shadow-xl">
+              <div className="flex items-center gap-2 text-white font-semibold mb-6">
+                <Layers className="w-5 h-5 text-indigo-400" />
+                <h3>Live Order Book Depth</h3>
               </div>
-
-              <div className="grid grid-cols-2 gap-4 text-xs font-mono">
-                {/* Bids (Buy Orders) */}
+              
+              <div className="grid grid-cols-2 gap-8 font-mono text-xs">
+                {/* Bids */}
                 <div>
-                  <div className="text-zinc-500 text-[10px] pb-1 border-b border-zinc-800 flex justify-between font-sans">
-                    <span>Bid Size</span>
-                    <span>Bid Price (USD)</span>
+                  <div className="flex justify-between text-zinc-500 uppercase tracking-wider pb-2 border-b border-zinc-800/80 mb-3">
+                    <span>Size</span>
+                    <span>Bid Price</span>
                   </div>
-                  <div className="space-y-1.5 mt-2">
-                    {orderBook.bids.map((b, i) => (
-                      <div key={i} className="flex items-center justify-between text-zinc-200">
-                        <span className="text-zinc-400">{b.size}</span>
-                        <span className="font-bold text-emerald-400">${b.price.toFixed(2)}</span>
+                  <div className="space-y-1.5">
+                    {orderBook.bids.map(([price, qty], i) => (
+                      <div key={i} className="flex justify-between relative group cursor-pointer hover:bg-zinc-800/50 rounded px-1 -mx-1">
+                        <span className="text-zinc-400">{parseFloat(qty).toFixed(4)}</span>
+                        <span className="text-emerald-400 font-semibold">${parseFloat(price).toFixed(2)}</span>
+                        <div 
+                          className="absolute right-0 top-0 bottom-0 bg-emerald-500/10 pointer-events-none"
+                          style={{ width: `${Math.min(100, parseFloat(qty) * 10)}%` }}
+                        />
                       </div>
                     ))}
                   </div>
                 </div>
 
-                {/* Asks (Sell Orders) */}
+                {/* Asks */}
                 <div>
-                  <div className="text-zinc-500 text-[10px] pb-1 border-b border-zinc-800 flex justify-between font-sans">
-                    <span>Ask Price (USD)</span>
-                    <span>Ask Size</span>
+                  <div className="flex justify-between text-zinc-500 uppercase tracking-wider pb-2 border-b border-zinc-800/80 mb-3">
+                    <span>Ask Price</span>
+                    <span>Size</span>
                   </div>
-                  <div className="space-y-1.5 mt-2">
-                    {orderBook.asks.map((a, i) => (
-                      <div key={i} className="flex items-center justify-between text-zinc-200">
-                        <span className="font-bold text-rose-400">${a.price.toFixed(2)}</span>
-                        <span className="text-zinc-400">{a.size}</span>
+                  <div className="space-y-1.5">
+                    {orderBook.asks.map(([price, qty], i) => (
+                      <div key={i} className="flex justify-between relative group cursor-pointer hover:bg-zinc-800/50 rounded px-1 -mx-1">
+                        <div 
+                          className="absolute left-0 top-0 bottom-0 bg-rose-500/10 pointer-events-none"
+                          style={{ width: `${Math.min(100, parseFloat(qty) * 10)}%` }}
+                        />
+                        <span className="text-rose-400 font-semibold">${parseFloat(price).toFixed(2)}</span>
+                        <span className="text-zinc-400">{parseFloat(qty).toFixed(4)}</span>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
             </div>
+
           </div>
         )}
       </div>
     </div>
   );
 };
+

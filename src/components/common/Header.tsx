@@ -203,7 +203,7 @@ export const Header: React.FC<HeaderProps> = ({
                     <button
                       onClick={() => onSelectTab('media-vault')}
                       className={`px-3 py-1.5 rounded-lg transition-colors flex items-center space-x-1.5 cursor-pointer ${
-                        currentTab === 'google-drive'
+                        currentTab === 'media-vault'
                           ? 'bg-blue-950/40 text-blue-300 border border-blue-500/30 font-semibold'
                           : 'text-zinc-400 hover:text-blue-300 hover:bg-zinc-800/50'
                       }`}
@@ -238,7 +238,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <button
                   onClick={() => onSelectTab('media-vault')}
                   className={`hover:text-blue-300 transition-colors cursor-pointer flex items-center space-x-1 ${
-                    currentTab === 'google-drive' ? 'text-blue-400 font-semibold' : ''
+                    currentTab === 'media-vault' ? 'text-blue-400 font-semibold' : ''
                   }`}
                 >
                     <Box className="w-3.5 h-3.5 text-blue-400" />
@@ -399,7 +399,7 @@ export const Header: React.FC<HeaderProps> = ({
                         </button>
                         <button
                           onClick={() => {
-                            onSelectTab('google-drive');
+                            onSelectTab('media-vault');
                             setShowUserMenu(false);
                           }}
                           className="w-full px-3 py-1.5 text-left text-blue-300 hover:bg-blue-950/40 flex items-center space-x-2 cursor-pointer"
