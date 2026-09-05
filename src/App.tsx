@@ -29,7 +29,7 @@ import { OrdersView } from './components/customer/OrdersView.tsx';
 import { AiInsightsView } from './components/customer/AiInsightsView.tsx';
 import { ActivityView } from './components/customer/ActivityView.tsx';
 import { SettingsView } from './components/customer/SettingsView.tsx';
-import { AdminPortal } from './components/admin/AdminPortal.tsx';
+import { AdminSupervisorView } from './components/admin/AdminSupervisorView.tsx';
 import { MediaVaultView } from './components/media/MediaVaultView.tsx';
 import { TradeModal } from './components/customer/TradeModal.tsx';
 import { BrokerDeskAssistant } from './components/customer/BrokerDeskAssistant.tsx';
@@ -359,6 +359,13 @@ export default function App() {
     setCurrentTab(tab);
   };
 
+  useEffect(() => {
+    if (!isLoading && isAdminTab && user?.role !== 'ADMIN') {
+      window.history.replaceState({}, '', '/login');
+      setCurrentTab('login');
+    }
+  }, [isAdminTab, isLoading, user?.role]);
+
   const renderContent = () => {
     if (isLoading) {
       return (
@@ -409,7 +416,7 @@ export default function App() {
 
     if (isAdminTab) {
       if (user?.role === 'ADMIN') {
-        return <AdminPortal onBackToCustomer={() => setCurrentTab('dashboard')} />;
+        return <AdminSupervisorView />;
       }
       return (
         <div className="flex flex-col items-center justify-center py-32 text-center animate-in fade-in zoom-in-95">
