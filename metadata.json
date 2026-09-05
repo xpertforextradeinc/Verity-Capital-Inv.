@@ -1,0 +1,6 @@
+{
+  "name": "Quantix Exchange",
+  "description": "Brokerage-style paper-trading platform with simulated portfolios, live market execution, Google Drive report sync, watchlists, risk disclosures, and AI-assisted market insights.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

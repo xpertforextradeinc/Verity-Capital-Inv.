@@ -1,0 +1,186 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Account details, simulated balances, and platform role for an investor or administrator.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "format": "email", "maxLength": 128 },
+        "firstName": { "type": "string", "maxLength": 64 },
+        "lastName": { "type": "string", "maxLength": 64 },
+        "role": { "type": "string", "enum": ["CUSTOMER", "ADMIN"] },
+        "status": { "type": "string", "enum": ["ACTIVE", "SUSPENDED"] },
+        "simulatedCashBalance": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "email", "firstName", "lastName", "role", "status", "createdAt", "updatedAt"]
+    },
+    "Portfolio": {
+      "title": "Portfolio",
+      "description": "Simulated balance, cash reserve, total equity and PnL metrics for a user.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "baseCurrency": { "type": "string", "maxLength": 10 },
+        "simulatedCashBalance": { "type": "number" },
+        "investedBalance": { "type": "number" },
+        "totalEquity": { "type": "number" },
+        "unrealizedPnl": { "type": "number" },
+        "unrealizedPnlPercent": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "baseCurrency", "simulatedCashBalance", "createdAt", "updatedAt"]
+    },
+    "Position": {
+      "title": "Position",
+      "description": "Open paper holding in an instrument.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "instrumentId": { "type": "string", "maxLength": 64 },
+        "symbol": { "type": "string", "maxLength": 20 },
+        "name": { "type": "string", "maxLength": 100 },
+        "assetType": { "type": "string", "enum": ["STOCK", "CRYPTO", "ETF", "FOREX"] },
+        "quantity": { "type": "number" },
+        "averagePrice": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "instrumentId", "symbol", "quantity", "averagePrice", "updatedAt"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Simulated trade order request and execution state.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "instrumentId": { "type": "string", "maxLength": 64 },
+        "symbol": { "type": "string", "maxLength": 20 },
+        "name": { "type": "string", "maxLength": 100 },
+        "side": { "type": "string", "enum": ["BUY", "SELL"] },
+        "orderType": { "type": "string", "enum": ["MARKET", "LIMIT"] },
+        "quantity": { "type": "number" },
+        "requestedPrice": { "type": "number" },
+        "executedPrice": { "type": "number" },
+        "totalValue": { "type": "number" },
+        "status": { "type": "string", "enum": ["EXECUTED", "PENDING", "CANCELLED", "REJECTED"] },
+        "rejectionReason": { "type": "string", "maxLength": 256 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "executedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "instrumentId", "symbol", "side", "orderType", "quantity", "status", "createdAt"]
+    },
+    "Instrument": {
+      "title": "Instrument",
+      "description": "Tradeable market asset such as a stock, cryptocurrency, ETF, or forex pair.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "symbol": { "type": "string", "maxLength": 20 },
+        "name": { "type": "string", "maxLength": 100 },
+        "assetType": { "type": "string", "enum": ["STOCK", "CRYPTO", "ETF", "FOREX"] },
+        "exchange": { "type": "string", "maxLength": 30 },
+        "currency": { "type": "string", "maxLength": 10 },
+        "status": { "type": "string", "enum": ["ACTIVE", "HALTED"] },
+        "dataSource": { "type": "string", "maxLength": 50 },
+        "price": { "type": "number" },
+        "changeAmount": { "type": "number" },
+        "changePercent": { "type": "number" },
+        "high24h": { "type": "number" },
+        "low24h": { "type": "number" },
+        "volume24h": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "symbol", "name", "assetType", "exchange", "currency", "status", "price", "updatedAt"]
+    },
+    "Watchlist": {
+      "title": "Watchlist",
+      "description": "Custom user collection of watched market instruments.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 60 },
+        "instrumentIds": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "name", "createdAt", "updatedAt"]
+    },
+    "AuditEvent": {
+      "title": "AuditEvent",
+      "description": "Immutable security and operational event log entry.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "actorUserId": { "type": "string", "maxLength": 128 },
+        "actorEmail": { "type": "string", "maxLength": 128 },
+        "eventType": { "type": "string", "maxLength": 64 },
+        "targetType": { "type": "string", "maxLength": 64 },
+        "targetId": { "type": "string", "maxLength": 128 },
+        "metadataJson": { "type": "string", "maxLength": 2048 },
+        "ipHash": { "type": "string", "maxLength": 64 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "actorUserId", "actorEmail", "eventType", "createdAt"]
+    },
+    "AiInsight": {
+      "title": "AiInsight",
+      "description": "Gemini-generated educational market analysis with strict risk disclosures.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "instrumentId": { "type": "string", "maxLength": 64 },
+        "symbol": { "type": "string", "maxLength": 20 },
+        "title": { "type": "string", "maxLength": 120 },
+        "summary": { "type": "string", "maxLength": 1000 },
+        "sentiment": { "type": "string", "enum": ["BULLISH", "BEARISH", "NEUTRAL"] },
+        "riskLevel": { "type": "string", "enum": ["LOW", "MODERATE", "HIGH"] },
+        "confidenceScore": { "type": "number" },
+        "modelName": { "type": "string", "maxLength": 60 },
+        "disclaimer": { "type": "string", "maxLength": 500 },
+        "generatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "instrumentId", "symbol", "title", "summary", "sentiment", "riskLevel", "generatedAt", "disclaimer"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles with role, status, and account metadata"
+    },
+    "/users/{userId}/portfolio/{portfolioId}": {
+      "schema": "Portfolio",
+      "description": "User portfolio metrics, simulated balances, and cash records"
+    },
+    "/users/{userId}/positions/{positionId}": {
+      "schema": "Position",
+      "description": "Current open simulated asset holdings for a specific user"
+    },
+    "/users/{userId}/orders/{orderId}": {
+      "schema": "Order",
+      "description": "User simulated trading orders and execution records"
+    },
+    "/users/{userId}/watchlists/{watchlistId}": {
+      "schema": "Watchlist",
+      "description": "Custom user watchlists of market symbols"
+    },
+    "/instruments/{instrumentId}": {
+      "schema": "Instrument",
+      "description": "Global market instruments, prices, and trading status"
+    },
+    "/audit_events/{eventId}": {
+      "schema": "AuditEvent",
+      "description": "Global security, compliance, and administration ledger"
+    },
+    "/ai_insights/{insightId}": {
+      "schema": "AiInsight",
+      "description": "AI-generated educational market research and sentiment data"
+    }
+  }
+}

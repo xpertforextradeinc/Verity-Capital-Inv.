@@ -1,0 +1,124 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default-deny all paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Security Helpers
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        (request.auth.token.email == 'hassanluckman5@gmail.com' && request.auth.token.email_verified == true) ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Admins Collection
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin();
+
+      allow create: if isValidId(userId) && isOwner(userId) &&
+        incoming().keys().hasAll(['id', 'email', 'firstName', 'lastName', 'role', 'status', 'createdAt', 'updatedAt']) &&
+        incoming().role == 'CUSTOMER' &&
+        incoming().status == 'ACTIVE' &&
+        incoming().email is string && incoming().email.size() <= 128 &&
+        incoming().firstName is string && incoming().firstName.size() <= 64 &&
+        incoming().lastName is string && incoming().lastName.size() <= 64;
+
+      allow update: if isValidId(userId) && (
+        (isAdmin() && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'role', 'simulatedCashBalance', 'updatedAt'])) ||
+        (isOwner(userId) && existing().status == 'ACTIVE' && incoming().diff(existing()).affectedKeys().hasOnly(['firstName', 'lastName', 'updatedAt']) &&
+          incoming().firstName is string && incoming().firstName.size() <= 64 &&
+          incoming().lastName is string && incoming().lastName.size() <= 64)
+      );
+
+      allow delete: if isAdmin();
+
+      // Subcollection: Portfolio
+      match /portfolio/{portfolioId} {
+        allow read: if isValidId(userId) && (isOwner(userId) || isAdmin());
+        allow write: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      }
+
+      // Subcollection: Positions
+      match /positions/{positionId} {
+        allow read: if isValidId(userId) && (isOwner(userId) || isAdmin());
+        allow write: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      }
+
+      // Subcollection: Orders
+      match /orders/{orderId} {
+        allow read: if isValidId(userId) && (isOwner(userId) || isAdmin());
+        allow create: if isValidId(userId) && (isOwner(userId) || isAdmin()) &&
+          incoming().keys().hasAll(['id', 'userId', 'instrumentId', 'symbol', 'side', 'orderType', 'quantity', 'status', 'createdAt']) &&
+          incoming().userId == userId &&
+          incoming().quantity is number && incoming().quantity > 0;
+        allow update: if isValidId(userId) && (isOwner(userId) || isAdmin()) &&
+          incoming().userId == existing().userId;
+        allow delete: if isAdmin();
+      }
+
+      // Subcollection: Watchlists
+      match /watchlists/{watchlistId} {
+        allow read: if isValidId(userId) && (isOwner(userId) || isAdmin());
+        allow create, update, delete: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      }
+    }
+
+    // Market Instruments Catalog
+    match /instruments/{instrumentId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // AI Market Insights
+    match /ai_insights/{insightId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Audit Events (Append-only ledger)
+    match /audit_events/{eventId} {
+      allow read: if isAdmin();
+      allow create: if isSignedIn() &&
+        incoming().keys().hasAll(['id', 'actorUserId', 'actorEmail', 'eventType', 'createdAt']) &&
+        incoming().actorUserId == request.auth.uid;
+      allow update, delete: if false; // Immutable ledger
+    }
+
+    // System Telemetry & Circuit Breakers
+    match /system/{metricId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+  }
+}
