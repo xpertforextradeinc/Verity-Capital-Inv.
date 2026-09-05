@@ -32,3 +32,13 @@ export async function signUpWithSupabase(
     options: { data: { first_name: firstName, last_name: lastName } },
   });
 }
+
+export async function signInWithGoogleSupabase() {
+  if (!supabase) {
+    throw new Error('Supabase authentication is not configured.');
+  }
+  return supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: `${window.location.origin}/login` },
+  });
+}

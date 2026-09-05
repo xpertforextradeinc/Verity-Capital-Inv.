@@ -7,8 +7,6 @@ import {
   ShieldCheck,
   ArrowRight,
   ArrowLeft,
-  Sparkles,
-  Zap,
   AlertCircle,
   Building2,
   MapPin,
@@ -17,6 +15,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { User } from '../../types.ts';
+import { signInWithGoogleSupabase } from '../../services/supabase.ts';
 
 
 
@@ -26,8 +25,7 @@ interface AuthModalProps {
   onClose: () => void;
   onLogin: (email: string, password: string) => Promise<void>;
   onRegister: (firstName: string, lastName: string, email: string, password: string) => Promise<void>;
-  onSwitchDemo: (role: 'CUSTOMER' | 'ADMIN') => Promise<void>;
-  
+  onGoogleSignIn?: (email: string, displayName?: string) => Promise<void>;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
@@ -36,8 +34,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onClose,
   onLogin,
   onRegister,
-  onSwitchDemo,
-  
+  onGoogleSignIn,
 }) => {
   const [mode, setMode] = useState<'login' | 'register' | 'forgot'>(initialMode);
   
@@ -140,20 +137,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
-  const handleQuickDemo = async (role: 'CUSTOMER' | 'ADMIN') => {
+  const handleGoogleAuth = async () => {
     setErrorMsg(null);
     setIsSubmitting(true);
     try {
-      await onSwitchDemo(role);
-      onClose();
+      const { error } = await signInWithGoogleSupabase();
+      if (error) throw error;
     } catch (err: any) {
-      setErrorMsg('Failed to switch demo account');
+      setErrorMsg(err.message || 'Google authentication failed');
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  
 
   const renderRegisterStep = () => {
     switch (registerStep) {

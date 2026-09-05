@@ -19,6 +19,7 @@ import { TickerBar } from './components/common/TickerBar.tsx';
 import { PublicLayout } from './components/layout/PublicLayout.tsx';
 import { InstitutionalLayout } from './components/layout/InstitutionalLayout.tsx';
 import { LandingPage } from './components/public/LandingPage.tsx';
+import { InstitutionalAccess } from './components/public/InstitutionalAccess.tsx';
 import { InfoPages } from './components/public/InfoPages.tsx';
 import { DashboardView } from './components/customer/DashboardView.tsx';
 import { PortfolioView } from './components/customer/PortfolioView.tsx';
@@ -37,7 +38,7 @@ import { AssetSpecsModal } from './components/customer/AssetSpecsModal.tsx';
 import { KycModal } from './components/customer/KycModal.tsx';
 import { AuthModal } from './components/auth/AuthModal.tsx';
 import { ShieldAlert, TrendingUp, Info } from 'lucide-react';
-import { hasSupabaseClient, signInWithSupabase, signUpWithSupabase, supabase } from './services/supabase.ts';
+import { hasSupabaseClient, signInWithGoogleSupabase, signInWithSupabase, signUpWithSupabase, supabase } from './services/supabase.ts';
 
 export default function App() {
   // Application State
@@ -53,7 +54,11 @@ export default function App() {
   const [transfers, setTransfers] = useState<TransferRecord[]>([]);
 
   // Navigation & UI State
-  const [currentTab, setCurrentTab] = useState<string>('home');
+  const [currentTab, setCurrentTab] = useState<string>(() => {
+    if (typeof window === 'undefined') return 'home';
+    const path = window.location.pathname.replace(/^\//, '');
+    return path === 'open-account' ? 'onboarding' : path || 'home';
+  });
   const [selectedInstrument, setSelectedInstrument] = useState<Instrument | null>(null);
   const [isTradeModalOpen, setIsTradeModalOpen] = useState<boolean>(false);
   const [tradeModalInstrument, setTradeModalInstrument] = useState<Instrument | null>(null);
@@ -302,20 +307,6 @@ export default function App() {
     await fetchData();
   };
 
-  const handleGoogleSignIn = async (email: string, displayName?: string) => {
-    try {
-      setIsLoading(true);
-      const data = await api.syncGoogleUser(email, displayName);
-      setUser(data.user);
-      setCurrentTab('dashboard');
-      await fetchData();
-    } catch (err: any) {
-      console.error('Failed to sync Google user:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleLogout = async () => {
     if (supabase) await supabase.auth.signOut();
     await api.logout();
@@ -359,9 +350,14 @@ export default function App() {
   };
 
 
-  const publicTabs = ['home', 'markets', 'about', 'features', 'risk-disclosure', 'terms', 'privacy', 'security'];
+  const publicTabs = ['home', 'markets', 'about', 'features', 'testimonials', 'coverage', 'risk-disclosure', 'terms', 'privacy', 'security', 'login', 'onboarding', 'open-account'];
   const isPublicTab = publicTabs.includes(currentTab);
   const isAdminTab = currentTab.startsWith('admin');
+  const setPublicRoute = (tab: string) => {
+    const route = tab === 'home' ? '/' : `/${tab === 'onboarding' ? 'open-account' : tab}`;
+    window.history.pushState({}, '', route);
+    setCurrentTab(tab);
+  };
 
   const renderContent = () => {
     if (isLoading) {
@@ -378,14 +374,27 @@ export default function App() {
         <LandingPage
           instruments={instruments}
           onOpenTrade={handleOpenTrade}
-          onOpenAuth={handleOpenAuth}
-          onSelectTab={setCurrentTab}
+          onOpenAuth={(mode) => setPublicRoute(mode === 'login' ? 'login' : 'onboarding')}
+          onSelectTab={setPublicRoute}
         />
       );
     }
 
     if (currentTab === 'markets') {
-      return <Markets onOpenAuth={user ? undefined : handleOpenAuth} />;
+      return <Markets onOpenAuth={user ? undefined : (mode) => setPublicRoute(mode === 'login' ? 'login' : 'onboarding')} />;
+    }
+
+    if (currentTab === 'login' || currentTab === 'onboarding' || currentTab === 'open-account') {
+      return <InstitutionalAccess
+        mode={currentTab === 'login' ? 'login' : 'onboarding'}
+        onBack={() => setPublicRoute('home')}
+        onLogin={handleLogin}
+        onRegister={handleRegister}
+        onGoogleSignIn={async () => {
+          const { error } = await signInWithGoogleSupabase();
+          if (error) throw error;
+        }}
+      />;
     }
 
     if (publicTabs.includes(currentTab) && currentTab !== 'home') {
@@ -517,9 +526,9 @@ export default function App() {
           user={null}
           portfolio={null}
           currentTab={currentTab}
-          onSelectTab={setCurrentTab}
+          onSelectTab={setPublicRoute}
           onLogout={() => {}}
-          onOpenAuth={handleOpenAuth}
+          onOpenAuth={(mode) => setPublicRoute(mode === 'login' ? 'login' : 'onboarding')}
         >
           {renderContent()}
         </InstitutionalLayout>
@@ -588,8 +597,6 @@ export default function App() {
         onClose={() => setIsAuthModalOpen(false)}
         onLogin={handleLogin}
         onRegister={handleRegister}
-        onSwitchDemo={handleSwitchDemo}
-        onGoogleSignIn={handleGoogleSignIn}
       />
 
       {/* Footer */}

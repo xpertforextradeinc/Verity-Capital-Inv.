@@ -1,99 +1,58 @@
 import React from 'react';
-import { Shield, Zap, Globe, ArrowRight } from 'lucide-react';
+import { ArrowRight, BarChart3, Globe2, LockKeyhole, Network, Zap } from 'lucide-react';
 
 interface LandingPageProps {
-  instruments: any[];
+  instruments: Array<{ symbol: string; price: number; changePercent: number }>;
   onOpenTrade: () => void;
   onOpenAuth: (mode: 'login' | 'register') => void;
   onSelectTab: (tab: string) => void;
 }
 
-export const LandingPage: React.FC<LandingPageProps> = ({
-  onOpenAuth,
-  onSelectTab
-}) => {
-  return (
-    <div className="space-y-24 pb-24 animate-in fade-in zoom-in-95 duration-700">
-      
-      {/* 3D Hero Section */}
-      <section className="relative overflow-hidden rounded-3xl border border-zinc-800 bg-[#0A0E17] flex flex-col lg:flex-row items-center">
-        <div className="flex-1 p-12 lg:p-20 z-10 space-y-8">
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-mono uppercase tracking-wider">
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse"></span>
-            <span>Institutional Grade Infrastructure</span>
-          </div>
-          
-          <h1 className="text-5xl lg:text-7xl font-bold text-white leading-tight tracking-tight">
-            Confident, Institutional-Grade <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">
-              Execution & Custody
-            </span>
-          </h1>
-          
-          <p className="text-lg text-zinc-400 max-w-xl leading-relaxed">
-            Built for professional traders who demand precision, liquidity, and regulatory strength. Access global crypto markets with uncompromised compliance.
-          </p>
-          
-          <div className="flex items-center space-x-4 pt-4">
-            <button
-              onClick={() => onOpenAuth('register')}
-              className="bg-white hover:bg-zinc-200 text-black font-semibold px-8 py-4 rounded-xl flex items-center space-x-2 transition-colors cursor-pointer"
-            >
-              <span>Open Institutional Account</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => onOpenAuth('login')}
-              className="px-8 py-4 rounded-xl font-semibold text-white border border-zinc-700 hover:bg-zinc-800 transition-colors cursor-pointer"
-            >
-              Client Login
-            </button>
-          </div>
-        </div>
+const testimonials = [
+  ['US', '“Verity-Capital provides the fastest institutional crypto settlement we have used.”', 'Michael R. · Chicago'],
+  ['FR', '“Execution quality is exceptional. It feels like a true prime brokerage.”', 'Claire D. · Paris'],
+  ['DE', '“Reliable custody and transparent reporting for regulated firms.”', 'Jonas K. · Frankfurt'],
+  ['UK', '“The onboarding was smooth, measured, and professional.”', 'Amelia S. · London'],
+  ['NG', '“A serious institutional digital asset partner for African markets.”', 'Tunde A. · Lagos'],
+];
 
-        {/* 3D Model Container */}
-        <div className="w-full lg:w-1/2 h-[500px] lg:h-[700px] relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0A0E17] to-transparent z-10 w-32 hidden lg:block"></div>
-          {/* @ts-ignore */}
-          <model-viewer
-            src="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb"
-            auto-rotate
-            camera-controls
-            disable-zoom
-            style={{ width: '100%', height: '100%' }}
-            class="w-full h-full outline-none"
-            camera-orbit="45deg 75deg 2.5m"
-            exposure="1"
-          >
-          </model-viewer>
-        </div>
-      </section>
+const services = [
+  ['Prime Brokerage', 'Deep liquidity and low-latency execution for qualified institutional clients.', Network],
+  ['Custody', 'Secure multi-signature vaulting with global compliance controls.', LockKeyhole],
+  ['OTC Desk', 'High-volume block trades with coordinated settlement workflows.', Zap],
+  ['Portfolio Reporting', 'Institutional dashboards and audit-ready statements for every mandate.', BarChart3],
+] as const;
 
-      {/* Features Grid */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div className="p-8 rounded-3xl bg-zinc-900 border border-zinc-800">
-          <Shield className="w-10 h-10 text-emerald-400 mb-6" />
-          <h3 className="text-xl font-bold text-white mb-3">Bank-Grade Custody</h3>
-          <p className="text-zinc-400 leading-relaxed">
-            Assets are secured in cold storage with multi-signature authorization and comprehensive insurance coverage.
-          </p>
+export const LandingPage: React.FC<LandingPageProps> = ({ instruments, onOpenAuth, onSelectTab }) => (
+  <div className="space-y-24 pb-16">
+    <section className="relative isolate overflow-hidden border border-white/10 bg-[#070b1b] px-6 py-16 sm:px-10 lg:min-h-[650px] lg:px-20 lg:py-24">
+      <div className="pointer-events-none absolute inset-0 -z-10 opacity-60 [background-image:linear-gradient(rgba(56,189,248,.07)_1px,transparent_1px),linear-gradient(90deg,rgba(56,189,248,.07)_1px,transparent_1px)] [background-size:54px_54px] [mask-image:linear-gradient(to_bottom,black,transparent)]" />
+      <div className="pointer-events-none absolute -right-32 top-0 -z-10 h-[620px] w-[620px] rounded-full bg-cyan-400/10 blur-[100px]" />
+      <div className="grid items-center gap-14 lg:grid-cols-[0.9fr_1.1fr]">
+        <div className="max-w-2xl">
+          <div className="mb-6 inline-flex items-center gap-2 border border-cyan-300/20 bg-cyan-300/5 px-3 py-1.5 text-[10px] font-mono uppercase tracking-[0.22em] text-cyan-300"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_10px_#34d399]" /> Institutional market access</div>
+          <h1 className="text-5xl font-semibold leading-[1.02] tracking-[-0.04em] text-white sm:text-6xl lg:text-7xl">Verity-Capital Institutional Crypto Brokerage</h1>
+          <p className="mt-7 max-w-xl text-lg leading-8 text-zinc-400">Deep liquidity. Low-latency execution. Global institutional coverage.</p>
+          <div className="mt-9 flex flex-wrap gap-3"><button onClick={() => onOpenAuth('register')} className="group flex items-center gap-3 bg-cyan-300 px-5 py-3.5 text-sm font-bold text-slate-950 transition hover:bg-cyan-200">Open Institutional Account <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" /></button><button onClick={() => onOpenAuth('login')} className="border border-white/15 px-5 py-3.5 text-sm font-semibold text-white transition hover:border-cyan-300/60 hover:bg-white/5">Client Login</button></div>
+          <p className="mt-5 max-w-lg text-[11px] leading-5 text-zinc-500">Services are available to qualified institutional clients only. Onboarding is subject to KYC, AML, and regulatory review.</p>
         </div>
-        <div className="p-8 rounded-3xl bg-zinc-900 border border-zinc-800">
-          <Zap className="w-10 h-10 text-amber-400 mb-6" />
-          <h3 className="text-xl font-bold text-white mb-3">Ultra-Low Latency</h3>
-          <p className="text-zinc-400 leading-relaxed">
-            Direct market access and smart order routing across premium global liquidity venues.
-          </p>
+        <div className="relative min-h-[370px] overflow-hidden border border-cyan-300/15 bg-[#050816] p-5 shadow-[0_0_80px_rgba(34,211,238,.08)] sm:min-h-[470px]">
+          <div className="absolute inset-0 [background-image:linear-gradient(rgba(34,211,238,.09)_1px,transparent_1px),linear-gradient(90deg,rgba(34,211,238,.09)_1px,transparent_1px)] [background-size:42px_42px]" />
+          <div className="absolute inset-x-10 bottom-16 top-20 rotate-[-8deg] border-b border-cyan-300/40 [box-shadow:0_20px_40px_rgba(34,211,238,.14)]" style={{ clipPath: 'polygon(0 72%, 10% 64%, 17% 71%, 27% 44%, 35% 54%, 45% 26%, 54% 39%, 65% 17%, 74% 28%, 84% 8%, 100% 0, 100% 100%, 0 100%)', background: 'linear-gradient(135deg, rgba(34,211,238,.3), rgba(79,70,229,.08))' }} />
+          <div className="relative flex items-center justify-between text-[10px] font-mono uppercase tracking-widest text-zinc-500"><span>VCX / Global liquidity map</span><span className="text-emerald-300">Connected</span></div>
+          <div className="absolute bottom-6 left-6 right-6 grid grid-cols-3 gap-3">{[['BTC/USD', '$79,663.11'], ['ETH/USD', '$2,487.20'], ['Latency', '<250ms']].map(([label, value]) => <div key={label} className="border border-white/10 bg-slate-950/75 p-3 backdrop-blur"><p className="text-[9px] uppercase tracking-widest text-zinc-500">{label}</p><p className="mt-2 font-mono text-sm text-white">{value}</p></div>)}</div>
         </div>
-        <div className="p-8 rounded-3xl bg-zinc-900 border border-zinc-800">
-          <Globe className="w-10 h-10 text-indigo-400 mb-6" />
-          <h3 className="text-xl font-bold text-white mb-3">Global Compliance</h3>
-          <p className="text-zinc-400 leading-relaxed">
-            Built from the ground up for rigorous regulatory adherence, KYC/AML screening, and audit reporting.
-          </p>
-        </div>
-      </section>
+      </div>
+    </section>
 
-    </div>
-  );
-};
+    <section id="features" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{services.map(([title, description, Icon]) => <div key={title} className="group border border-white/10 bg-white/[0.03] p-6 transition duration-300 hover:-translate-y-1 hover:border-cyan-300/40 hover:bg-cyan-300/[0.06] hover:shadow-[0_20px_50px_rgba(34,211,238,.08)]"><Icon className="h-6 w-6 text-cyan-300" /><h2 className="mt-6 text-lg font-semibold text-white">{title}</h2><p className="mt-3 text-sm leading-6 text-zinc-400">{description}</p></div>)}</section>
+
+    <section id="markets" className="grid items-center gap-10 lg:grid-cols-[.8fr_1.2fr]"><div><p className="text-[10px] font-mono uppercase tracking-[0.22em] text-cyan-300">Live market access</p><h2 className="mt-3 text-3xl font-semibold tracking-tight text-white">A clear view of liquidity before execution.</h2><p className="mt-4 max-w-lg text-sm leading-7 text-zinc-400">Observe live BTC and ETH market conditions, level-2 depth, spreads, and execution context through the institutional terminal.</p><button onClick={() => onSelectTab('markets')} className="mt-6 flex items-center gap-2 text-sm font-semibold text-cyan-300 hover:text-cyan-200">Explore Markets <ArrowRight className="h-4 w-4" /></button></div><div className="border border-white/10 bg-[#080d1d] p-5"><div className="mb-4 flex items-center justify-between text-xs"><span className="font-mono text-zinc-400">LIVE INSTRUMENTS</span><span className="text-emerald-300">Market open</span></div><div className="space-y-2">{instruments.slice(0, 4).map((instrument) => <div key={instrument.symbol} className="grid grid-cols-3 items-center border-t border-white/5 py-3 text-sm"><span className="font-mono text-white">{instrument.symbol}</span><span className="text-right font-mono text-zinc-200">${instrument.price.toLocaleString()}</span><span className={`text-right font-mono ${instrument.changePercent >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>{instrument.changePercent >= 0 ? '+' : ''}{instrument.changePercent.toFixed(2)}%</span></div>)}</div></div></section>
+
+    <section id="testimonials"><div className="mb-8 flex items-end justify-between gap-4"><div><p className="text-[10px] font-mono uppercase tracking-[0.22em] text-cyan-300">Global perspective</p><h2 className="mt-3 text-3xl font-semibold text-white">Built for institutional conviction.</h2></div><Globe2 className="hidden h-10 w-10 text-cyan-300/50 sm:block" /></div><div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">{testimonials.map(([region, quote, author]) => <figure key={region} className="border border-white/10 bg-white/[0.03] p-5"><div className="flex items-center justify-between text-xs font-mono text-cyan-300"><span>{region}</span><span>CLIENT VOICE</span></div><blockquote className="mt-8 min-h-24 text-sm leading-6 text-zinc-200">{quote}</blockquote><figcaption className="mt-6 border-t border-white/10 pt-4 text-xs text-zinc-500">{author}</figcaption></figure>)}</div></section>
+
+    <section id="coverage" className="border border-white/10 bg-gradient-to-br from-indigo-500/10 via-transparent to-cyan-300/5 p-8 sm:p-12"><div className="grid gap-10 lg:grid-cols-[.8fr_1.2fr] lg:items-center"><div><p className="text-[10px] font-mono uppercase tracking-[0.22em] text-cyan-300">Global coverage</p><h2 className="mt-3 text-3xl font-semibold text-white">One operating standard across major financial hubs.</h2><p className="mt-4 text-sm leading-7 text-zinc-400">Verity-Capital Inv supports institutional clients across major global financial hubs with coordinated coverage, reporting, and settlement operations.</p></div><div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{['US', 'EU', 'UK', 'Africa', 'Middle East', 'Asia'].map((region) => <div key={region} className="flex items-center gap-3 border border-white/10 bg-slate-950/40 px-4 py-4 text-sm font-medium text-white"><span className="h-2 w-2 rounded-full bg-cyan-300" />{region}</div>)}</div></div></section>
+
+    <section id="about" className="flex flex-col items-start justify-between gap-5 border-t border-white/10 pt-10 sm:flex-row sm:items-center"><div><h2 className="text-2xl font-semibold text-white">Ready for institutional access?</h2><p className="mt-2 text-sm text-zinc-400">Begin a regulated onboarding review with our client coverage team.</p></div><button onClick={() => onOpenAuth('register')} className="flex items-center gap-2 bg-emerald-400 px-5 py-3 text-sm font-bold text-slate-950 hover:bg-emerald-300">Start onboarding <ArrowRight className="h-4 w-4" /></button></section>
+  </div>
+);
