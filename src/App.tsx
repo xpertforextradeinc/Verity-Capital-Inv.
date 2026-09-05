@@ -519,13 +519,16 @@ export default function App() {
   return (
     <>
       {isPublicTab ? (
-        <PublicLayout
+        <InstitutionalLayout
+          user={null}
+          portfolio={null}
           currentTab={currentTab}
           onSelectTab={setCurrentTab}
+          onLogout={() => {}}
           onOpenAuth={handleOpenAuth}
         >
           {renderContent()}
-        </PublicLayout>
+        </InstitutionalLayout>
       ) : isAdminTab ? (
         <div className="min-h-screen bg-[#070A10] text-zinc-100 flex flex-col font-sans selection:bg-emerald-500/30 selection:text-emerald-300">
           <main className="flex-1 w-full mx-auto p-0 m-0">
@@ -600,8 +603,8 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex items-center space-x-2">
-              <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-mono font-bold text-xs">
-                Q
+                <div className="w-6 h-6 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-mono font-bold text-xs">
+                V
               </div>
               <span className="font-mono font-bold text-sm text-white">Verity-Capital Inv</span>
               <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-400 font-mono">
@@ -610,13 +613,6 @@ export default function App() {
             </div>
 
             <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-400">
-              <button
-                onClick={() => setCurrentTab('google-drive')}
-                className="hover:text-blue-400 text-blue-400/90 font-medium transition-colors cursor-pointer flex items-center space-x-1"
-              >
-                <span>Google Drive Workspace</span>
-              </button>
-              <span>•</span>
               <button
                 onClick={() => setCurrentTab('risk-disclosure')}
                 className="hover:text-amber-400 transition-colors cursor-pointer"

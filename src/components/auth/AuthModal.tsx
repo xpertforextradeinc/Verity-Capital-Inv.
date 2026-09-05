@@ -489,22 +489,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </button>
         </div>
 
-        {/* 1-Click Fast Demo Launcher (Only on login or forgot) */}
-        {mode !== 'register' && (
-          <div className="p-4 bg-zinc-900/80 border-b border-zinc-800 space-y-2 shrink-0">
-            <div className="text-[11px] font-semibold text-zinc-400 flex items-center justify-between">
-              <span>Fast Instant Demo Access</span>
-              <span className="text-amber-400 font-mono text-[10px]">No signup needed</span>
-            </div>
-            <div className="grid grid-cols-1 gap-2">
-              <button type="button" onClick={() => handleQuickDemo('CUSTOMER')} className="px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-semibold flex items-center justify-center space-x-1.5 transition-colors cursor-pointer">
-                <Zap className="w-3.5 h-3.5" />
-                <span>Alex M. ($100k)</span>
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* Form Body - Scrollable */}
         <div className="overflow-y-auto p-5 shrink-1">
           {mode === 'register' ? (

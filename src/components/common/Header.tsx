@@ -266,21 +266,6 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Right Header Action Items */}
           <div className="flex items-center space-x-3">
-            {/* Quick Demo Switcher Pill */}
-            <div className="hidden sm:flex items-center bg-zinc-900 border border-zinc-800 rounded-lg p-0.5 text-xs">
-              <button
-                onClick={() => onSwitchDemo('CUSTOMER')}
-                className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
-                  user && user.role === 'CUSTOMER'
-                    ? 'bg-zinc-800 text-white font-medium shadow-sm'
-                    : 'text-zinc-400 hover:text-zinc-200'
-                }`}
-                title="Switch to Demo Customer with $100k balance"
-              >
-                Customer ($100k)
-              </button>
-            </div>
-
             {/* If Authenticated: Balance badge, Quick Trade, Notifications */}
             {user ? (
               <>
@@ -465,7 +450,7 @@ export const Header: React.FC<HeaderProps> = ({
                   onClick={() => onOpenAuth('register')}
                   className="bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-semibold text-xs px-3.5 py-1.5 rounded-lg shadow-md shadow-emerald-500/10 transition-colors cursor-pointer"
                 >
-                  Open Demo Account
+                  Open Institutional Account
                 </button>
               </div>
             )}
