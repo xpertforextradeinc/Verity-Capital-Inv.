@@ -57,7 +57,9 @@ export default function App() {
   const [currentTab, setCurrentTab] = useState<string>(() => {
     if (typeof window === 'undefined') return 'home';
     const path = window.location.pathname.replace(/^\//, '');
-    return path === 'open-account' ? 'onboarding' : path || 'home';
+    if (path === 'open-account') return 'onboarding';
+    if (path === 'admin') return 'admin-overview';
+    return path || 'home';
   });
   const [selectedInstrument, setSelectedInstrument] = useState<Instrument | null>(null);
   const [isTradeModalOpen, setIsTradeModalOpen] = useState<boolean>(false);
@@ -359,6 +361,12 @@ export default function App() {
     setCurrentTab(tab);
   };
 
+  const navigateApp = (tab: string) => {
+    const route = tab.startsWith('admin') ? '/admin' : tab === 'home' ? '/' : `/${tab}`;
+    window.history.pushState({}, '', route);
+    setCurrentTab(tab);
+  };
+
   useEffect(() => {
     if (!isLoading && isAdminTab && user?.role !== 'ADMIN') {
       window.history.replaceState({}, '', '/login');
@@ -551,7 +559,7 @@ export default function App() {
           user={user as User}
           portfolio={portfolio}
           currentTab={currentTab}
-          onSelectTab={setCurrentTab}
+          onSelectTab={navigateApp}
           onLogout={handleLogout}
         >
           {renderContent()}
