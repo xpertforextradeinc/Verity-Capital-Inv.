@@ -22,7 +22,7 @@ import { LandingPage } from './components/public/LandingPage.tsx';
 import { InfoPages } from './components/public/InfoPages.tsx';
 import { DashboardView } from './components/customer/DashboardView.tsx';
 import { PortfolioView } from './components/customer/PortfolioView.tsx';
-import { MarketsView } from './components/customer/MarketsView.tsx';
+import { Markets } from './components/institutional/Markets.tsx';
 import { WatchlistsView } from './components/customer/WatchlistsView.tsx';
 import { OrdersView } from './components/customer/OrdersView.tsx';
 import { AiInsightsView } from './components/customer/AiInsightsView.tsx';
@@ -359,7 +359,7 @@ export default function App() {
   };
 
 
-  const publicTabs = ['home', 'about', 'features', 'risk-disclosure', 'terms', 'privacy', 'security'];
+  const publicTabs = ['home', 'markets', 'about', 'features', 'risk-disclosure', 'terms', 'privacy', 'security'];
   const isPublicTab = publicTabs.includes(currentTab);
   const isAdminTab = currentTab.startsWith('admin');
 
@@ -382,6 +382,10 @@ export default function App() {
           onSelectTab={setCurrentTab}
         />
       );
+    }
+
+    if (currentTab === 'markets') {
+      return <Markets onOpenAuth={user ? undefined : handleOpenAuth} />;
     }
 
     if (publicTabs.includes(currentTab) && currentTab !== 'home') {
@@ -454,16 +458,6 @@ export default function App() {
             instruments={instruments}
             onOpenTrade={handleOpenTrade}
             onOpenCustody={handleOpenCustody}
-          />
-        );
-      case 'markets':
-        return (
-          <MarketsView
-            instruments={instruments}
-            selectedInstrument={selectedInstrument}
-            onSelectInstrument={handleSelectInstrument}
-            onOpenTrade={handleOpenTrade}
-            onOpenSpecs={handleOpenSpecs}
           />
         );
       case 'watchlists':
