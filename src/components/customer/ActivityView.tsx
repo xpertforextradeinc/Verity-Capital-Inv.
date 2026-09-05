@@ -1,12 +1,14 @@
 import React from 'react';
 import { Activity, ShieldCheck, Clock, FileText, CheckCircle, UserCheck } from 'lucide-react';
-import { AuditEvent } from '../../types.ts';
+import { AuditEvent, Order, TransferRecord } from '../../types.ts';
 
 interface ActivityViewProps {
   activity: AuditEvent[];
+  orders?: Order[];
+  transfers?: TransferRecord[];
 }
 
-export const ActivityView: React.FC<ActivityViewProps> = ({ activity }) => {
+export const ActivityView: React.FC<ActivityViewProps> = ({ activity, orders = [], transfers = [] }) => {
   return (
     <div className="space-y-6">
       <div className="bg-[#0B0F19] border border-zinc-800 rounded-2xl p-5 shadow-xl">
@@ -17,6 +19,25 @@ export const ActivityView: React.FC<ActivityViewProps> = ({ activity }) => {
         <p className="text-xs text-zinc-400 mt-0.5">
           Immutable event log tracking logins, simulated executions, and account modifications
         </p>
+      </div>
+
+      <div className="bg-[#0B0F19] border border-zinc-800 rounded-2xl shadow-xl overflow-hidden">
+        <div className="p-4 border-b border-zinc-800 flex items-center justify-between text-xs text-zinc-400">
+          <span>Transactions & Custody Ledger ({orders.length + transfers.length})</span>
+          <span className="font-mono">Simulated settlement records</span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-zinc-900/60 border-b border-zinc-800 text-zinc-400">
+              <tr><th className="px-4 py-3">Time</th><th className="px-4 py-3">Type</th><th className="px-4 py-3">Reference</th><th className="px-4 py-3 text-right">Status</th></tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-800/60">
+              {[...orders.map((order) => ({ time: order.createdAt, type: `${order.side} ${order.symbol}`, reference: order.id, status: order.status })), ...transfers.map((transfer) => ({ time: transfer.createdAt, type: transfer.type, reference: transfer.referenceId || transfer.id, status: transfer.status }))]
+                .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
+                .map((item) => <tr key={`${item.type}-${item.reference}`} className="hover:bg-zinc-800/30"><td className="px-4 py-3 font-mono text-zinc-400">{new Date(item.time).toLocaleString()}</td><td className="px-4 py-3 text-white">{item.type}</td><td className="px-4 py-3 font-mono text-zinc-400">{item.reference}</td><td className="px-4 py-3 text-right text-emerald-400 font-semibold">{item.status}</td></tr>)}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div className="bg-[#0B0F19] border border-zinc-800 rounded-2xl shadow-xl overflow-hidden">

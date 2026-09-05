@@ -21,7 +21,7 @@ export const KycModal: React.FC<KycModalProps> = ({
   const [ssnLastFour, setSsnLastFour] = useState('');
   const [usState, setUsState] = useState('New York');
   const [w9Attestation, setW9Attestation] = useState(true);
-  const [tier, setTier] = useState<'TIER_1_VERIFIED' | 'TIER_2_INSTITUTIONAL'>('TIER_2_INSTITUTIONAL');
+  const [tier, setTier] = useState<'TIER_1_VERIFIED' | 'TIER_2_INSTITUTIONAL'>('TIER_1_VERIFIED');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -36,7 +36,7 @@ export const KycModal: React.FC<KycModalProps> = ({
           setSsnLastFour(data.ssnLastFour || '4829');
           setUsState(data.usState || 'New York');
           setW9Attestation(Boolean(data.w9Attestation));
-          setTier(data.tier);
+          setTier(data.tier === 'TIER_2_INSTITUTIONAL' ? 'TIER_2_INSTITUTIONAL' : 'TIER_1_VERIFIED');
         })
         .catch(err => console.error('Failed to load KYC profile:', err));
     }
@@ -119,14 +119,14 @@ export const KycModal: React.FC<KycModalProps> = ({
               <div className="text-[10px] text-zinc-400">CIP Status</div>
               <div className="text-emerald-400 font-bold font-mono text-xs mt-0.5 flex items-center justify-center space-x-1">
                 <CheckCircle2 className="w-3 h-3" />
-                <span>{profile?.cipStatus || 'PASSED'}</span>
+                <span>{profile?.cipStatus || 'IN_REVIEW'}</span>
               </div>
             </div>
             <div>
               <div className="text-[10px] text-zinc-400">OFAC Screening</div>
               <div className="text-emerald-400 font-bold font-mono text-xs mt-0.5 flex items-center justify-center space-x-1">
                 <ShieldCheck className="w-3 h-3" />
-                <span>{profile?.ofacScreening || 'CLEARED'}</span>
+                <span>{profile?.ofacScreening || 'PENDING'}</span>
               </div>
             </div>
             <div>
@@ -204,7 +204,7 @@ export const KycModal: React.FC<KycModalProps> = ({
                   className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-amber-500"
                 >
                   <option value="TIER_1_VERIFIED">Tier 1 Verified ($100k/day)</option>
-                  <option value="TIER_2_INSTITUTIONAL">Tier 2 Institutional ($500k/day)</option>
+                  <option value="TIER_2_INSTITUTIONAL">Tier 2 Institutional (admin approval)</option>
                 </select>
               </div>
             </div>

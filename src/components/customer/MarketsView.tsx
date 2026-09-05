@@ -65,17 +65,19 @@ export const MarketsView: React.FC<MarketsViewProps> = ({
     if (!active) return { bids: [], asks: [] };
     const p = active.price;
     const spread = p * 0.0008;
+    const seed = active.id.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0) + Math.round(p * 100);
+    const depth = (base: number, range: number) => base + ((seed * range) % 100);
     const bids = [
-      { price: p - spread * 1, size: Math.floor(Math.random() * 400 + 100) },
-      { price: p - spread * 2, size: Math.floor(Math.random() * 600 + 200) },
-      { price: p - spread * 3, size: Math.floor(Math.random() * 900 + 300) },
-      { price: p - spread * 4, size: Math.floor(Math.random() * 1200 + 400) },
+      { price: p - spread * 1, size: depth(100, 400) },
+      { price: p - spread * 2, size: depth(200, 600) },
+      { price: p - spread * 3, size: depth(300, 900) },
+      { price: p - spread * 4, size: depth(400, 1200) },
     ];
     const asks = [
-      { price: p + spread * 1, size: Math.floor(Math.random() * 350 + 100) },
-      { price: p + spread * 2, size: Math.floor(Math.random() * 550 + 200) },
-      { price: p + spread * 3, size: Math.floor(Math.random() * 850 + 300) },
-      { price: p + spread * 4, size: Math.floor(Math.random() * 1100 + 400) },
+      { price: p + spread * 1, size: depth(100, 350) },
+      { price: p + spread * 2, size: depth(200, 550) },
+      { price: p + spread * 3, size: depth(300, 850) },
+      { price: p + spread * 4, size: depth(400, 1100) },
     ];
     return { bids, asks };
   }, [active?.price]);

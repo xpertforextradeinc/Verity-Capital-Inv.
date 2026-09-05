@@ -1,4 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
+import { createClient } from '@supabase/supabase-js';
+import 'dotenv/config';
 import path from 'path';
 import multer from 'multer';
 import fs from 'fs';
@@ -9,6 +11,11 @@ import { User, Order, Watchlist, TransferRecord, KycProfile, FactualCryptoAsset 
 
 const app = express();
 const PORT = 3000;
+const supabaseAuth = process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY
+  ? createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY)
+  : process.env.VITE_SUPABASE_URL && process.env.VITE_SUPABASE_ANON_KEY
+    ? createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_ANON_KEY)
+    : null;
 
 // Middleware
 app.use(express.json());
@@ -38,8 +45,7 @@ function getCurrentUser(req: Request): User | null {
       return db.users.get(userId) || null;
     }
   }
-  // Default to demo customer if no specific header is provided
-  return db.users.get('usr_customer_alex') || null;
+  return null;
 }
 
 function requireAuth(req: Request, res: Response, next: NextFunction) {
@@ -255,6 +261,60 @@ app.post('/api/v1/auth/google-sync', (req: Request, res: Response) => {
   res.json({ user, token });
 });
 
+// Exchange a verified Supabase session for the paper-trading API session.
+app.post('/api/v1/auth/supabase-sync', async (req: Request, res: Response) => {
+  const { id, email, firstName, lastName } = req.body;
+  const authHeader = req.headers.authorization;
+  const accessToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : '';
+  if (!id || !email || !accessToken || !supabaseAuth) {
+    return res.status(401).json({ error: 'A valid Supabase session is required' });
+  }
+
+  const { data: authData, error: authError } = await supabaseAuth.auth.getUser(accessToken);
+  if (authError || !authData.user || authData.user.id !== id || authData.user.email?.toLowerCase() !== email.toLowerCase()) {
+    return res.status(401).json({ error: 'Supabase session validation failed' });
+  }
+
+  const now = new Date().toISOString();
+  let user = db.users.get(`supabase_${id}`) || Array.from(db.users.values()).find((item) => item.email.toLowerCase() === email.toLowerCase());
+
+  if (!user) {
+    const userId = `supabase_${id}`;
+    user = {
+      id: userId,
+      email: email.toLowerCase(),
+      firstName: firstName?.trim() || 'Institutional',
+      lastName: lastName?.trim() || 'Investor',
+      role: 'CUSTOMER',
+      status: 'ACTIVE',
+      emailVerifiedAt: now,
+      createdAt: now,
+      updatedAt: now,
+    };
+    db.users.set(userId, user);
+    const portfolioId = `port_${userId}`;
+    db.portfolios.set(userId, {
+      id: portfolioId,
+      userId,
+      baseCurrency: 'USD',
+      simulatedCashBalance: 100000,
+      investedBalance: 0,
+      totalEquity: 100000,
+      unrealizedPnl: 0,
+      unrealizedPnlPercent: 0,
+      dayPnl: 0,
+      dayPnlPercent: 0,
+      createdAt: now,
+      updatedAt: now,
+    });
+    db.positions.set(portfolioId, []);
+    db.watchlists.set(userId, []);
+  }
+
+  const token = user.role === 'ADMIN' ? 'admin_token' : `user_${user.id}`;
+  res.json({ user, token });
+});
+
 app.post('/api/v1/auth/logout', (req: Request, res: Response) => {
   res.json({ success: true });
 });
@@ -347,6 +407,32 @@ app.get('/api/v1/portfolio/positions', requireAuth, (req: Request, res: Response
   }
   const positions = db.positions.get(portfolio.id) || [];
   res.json(positions);
+});
+
+app.get('/api/v1/portfolio/balances', requireAuth, (req: Request, res: Response) => {
+  const user = (req as any).user as User;
+  const portfolio = db.portfolios.get(user.id);
+  if (!portfolio) return res.status(404).json({ error: 'Portfolio not found' });
+  const positions = db.positions.get(portfolio.id) || [];
+  const balances = [
+    {
+      asset: 'USD',
+      available: portfolio.simulatedCashBalance,
+      locked: 0,
+      marketValue: portfolio.simulatedCashBalance,
+      averageCost: 1,
+      unrealizedPnl: 0,
+    },
+    ...positions.map((position) => ({
+      asset: position.symbol,
+      available: position.quantity,
+      locked: 0,
+      marketValue: position.marketValue,
+      averageCost: position.averagePrice,
+      unrealizedPnl: position.unrealizedPnl,
+    })),
+  ];
+  res.json(balances);
 });
 
 app.post('/api/v1/portfolio/reset', requireAuth, (req: Request, res: Response) => {
@@ -764,6 +850,7 @@ app.post('/api/v1/compliance/kyc', requireAuth, (req: Request, res: Response) =>
   const user = (req as any).user as User;
   const { legalFirstName, legalLastName, dateOfBirth, ssnLastFour, usState, w9Attestation, tier } = req.body;
 
+  const requestedTier = tier === 'TIER_2_INSTITUTIONAL' ? 'TIER_1_VERIFIED' : (tier || 'TIER_1_VERIFIED');
   const updated = db.updateKycProfile(user.id, {
     legalFirstName: legalFirstName || user.firstName,
     legalLastName: legalLastName || user.lastName,
@@ -771,10 +858,10 @@ app.post('/api/v1/compliance/kyc', requireAuth, (req: Request, res: Response) =>
     ssnLastFour,
     usState,
     w9Attestation: Boolean(w9Attestation),
-    tier: tier || 'TIER_1_VERIFIED',
-    cipStatus: 'PASSED',
+    tier: requestedTier,
+    cipStatus: 'IN_REVIEW',
     ofacScreening: 'CLEARED',
-    dailyWithdrawalLimitUsd: tier === 'TIER_2_INSTITUTIONAL' ? 500000 : 100000,
+    dailyWithdrawalLimitUsd: 100000,
   });
 
   res.json(updated);

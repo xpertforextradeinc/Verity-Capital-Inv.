@@ -10,6 +10,7 @@ import {
   Key
 } from 'lucide-react';
 import { User } from '../../types.ts';
+import { supabase } from '../../services/supabase.ts';
 
 interface SettingsViewProps {
   user: User;
@@ -20,6 +21,57 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ user }) => {
   const [emailAlerts, setEmailAlerts] = useState(true);
   const [tradeConfirmations, setTradeConfirmations] = useState(true);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
+  const [mfaUri, setMfaUri] = useState<string | null>(null);
+  const [mfaCode, setMfaCode] = useState('');
+  const [mfaMessage, setMfaMessage] = useState<string | null>(null);
+  const [mfaBusy, setMfaBusy] = useState(false);
+
+  React.useEffect(() => {
+    if (!supabase) return;
+    supabase.auth.mfa.listFactors().then(({ data }) => {
+      const factor = data?.totp?.find((item) => item.status === 'verified');
+      setMfaFactorId(factor?.id || null);
+    });
+  }, []);
+
+  const startMfaEnrollment = async () => {
+    if (!supabase) {
+      setMfaMessage('Configure Supabase before enabling MFA.');
+      return;
+    }
+    setMfaBusy(true);
+    setMfaMessage(null);
+    try {
+      const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp', friendlyName: `${user.email} authenticator` });
+      if (error) throw error;
+      setMfaFactorId(data.id);
+      setMfaUri(data.totp.uri);
+      setMfaMessage('Scan the authenticator URI, then enter the six-digit code to verify.');
+    } catch (error: any) {
+      setMfaMessage(error.message || 'Unable to start MFA enrollment.');
+    } finally {
+      setMfaBusy(false);
+    }
+  };
+
+  const verifyMfaEnrollment = async () => {
+    if (!supabase || !mfaFactorId || !mfaCode) return;
+    setMfaBusy(true);
+    try {
+      const challenge = await supabase.auth.mfa.challenge({ factorId: mfaFactorId });
+      if (challenge.error) throw challenge.error;
+      const result = await supabase.auth.mfa.verify({ factorId: mfaFactorId, challengeId: challenge.data.id, code: mfaCode });
+      if (result.error) throw result.error;
+      setMfaUri(null);
+      setMfaCode('');
+      setMfaMessage('Multi-factor authentication is enabled for this account.');
+    } catch (error: any) {
+      setMfaMessage(error.message || 'The MFA code could not be verified.');
+    } finally {
+      setMfaBusy(false);
+    }
+  };
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,6 +198,31 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ user }) => {
               />
             </label>
           </div>
+        </div>
+
+        <div className="bg-[#0B0F19] border border-zinc-800 rounded-2xl p-5 shadow-xl space-y-4">
+          <div className="flex items-center space-x-2 pb-3 border-b border-zinc-800">
+            <Key className="w-4 h-4 text-amber-400" />
+            <h3 className="text-sm font-bold text-white">Multi-factor Authentication</h3>
+          </div>
+          <p className="text-xs text-zinc-400">Protect sign-ins with a time-based authenticator factor managed by Supabase Auth.</p>
+          {mfaMessage && <div className="p-3 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-zinc-300">{mfaMessage}</div>}
+          {mfaFactorId && !mfaUri ? (
+            <div className="flex items-center justify-between gap-3 text-xs">
+              <span className="text-emerald-400 flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Authenticator verified</span>
+              <span className="font-mono text-zinc-500">TOTP</span>
+            </div>
+          ) : mfaUri ? (
+            <div className="space-y-3">
+              <code className="block break-all rounded-xl bg-zinc-900 border border-zinc-800 p-3 text-[11px] text-zinc-300">{mfaUri}</code>
+              <div className="flex gap-2">
+                <input value={mfaCode} onChange={(event) => setMfaCode(event.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" placeholder="6-digit code" className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-white font-mono" />
+                <button type="button" onClick={verifyMfaEnrollment} disabled={mfaBusy || mfaCode.length !== 6} className="px-4 py-2 rounded-xl bg-amber-500 text-zinc-950 font-bold disabled:opacity-50">Verify</button>
+              </div>
+            </div>
+          ) : (
+            <button type="button" onClick={startMfaEnrollment} disabled={mfaBusy} className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold disabled:opacity-50">Enable authenticator MFA</button>
+          )}
         </div>
 
         {saveSuccess && (

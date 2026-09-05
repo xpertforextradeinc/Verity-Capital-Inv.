@@ -208,7 +208,7 @@ export const Header: React.FC<HeaderProps> = ({
                           : 'text-zinc-400 hover:text-blue-300 hover:bg-zinc-800/50'
                       }`}
                     >
-                      <HardDrive className="w-3.5 h-3.5 text-blue-400" />
+                      <Box className="w-3.5 h-3.5 text-blue-400" />
                       <span>Drive</span>
                     </button>
                   </>
@@ -241,7 +241,7 @@ export const Header: React.FC<HeaderProps> = ({
                     currentTab === 'google-drive' ? 'text-blue-400 font-semibold' : ''
                   }`}
                 >
-                  <HardDrive className="w-3.5 h-3.5 text-blue-400" />
+                    <Box className="w-3.5 h-3.5 text-blue-400" />
                   <span>Drive Sync</span>
                 </button>
                 <button
@@ -419,7 +419,7 @@ export const Header: React.FC<HeaderProps> = ({
                           }}
                           className="w-full px-3 py-1.5 text-left text-blue-300 hover:bg-blue-950/40 flex items-center space-x-2 cursor-pointer"
                         >
-                          <HardDrive className="w-3.5 h-3.5 text-blue-400" />
+                          <Box className="w-3.5 h-3.5 text-blue-400" />
                           <span>3D Asset Vault</span>
                         </button>
                         {isAdmin && (

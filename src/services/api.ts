@@ -3,6 +3,7 @@ import {
   Instrument,
   Position,
   Portfolio,
+  PortfolioBalance,
   Order,
   Watchlist,
   AiInsight,
@@ -100,13 +101,32 @@ class ApiService {
     return data;
   }
 
+  async syncSupabaseUser(data: {
+    id: string;
+    email: string;
+    firstName?: string;
+    lastName?: string;
+  }, accessToken?: string): Promise<{ user: User; token: string }> {
+    const existingToken = this.token;
+    if (accessToken) this.token = accessToken;
+    try {
+      const result = await this.request<{ user: User; token: string }>('/auth/supabase-sync', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+      this.setToken(result.token);
+      return result;
+    } finally {
+      if (!accessToken) this.token = existingToken;
+    }
+  }
+
   async getCurrentUser(): Promise<User> {
     const data = await this.request<{ user: User }>('/auth/me');
     return data.user;
   }
 
   async logout(): Promise<void> {
-    await this.request('/auth/logout', { method: 'POST' });
     this.setToken(null);
   }
 
@@ -130,6 +150,10 @@ class ApiService {
 
   async getPositions(): Promise<Position[]> {
     return this.request<Position[]>('/portfolio/positions');
+  }
+
+  async getPortfolioBalances(): Promise<PortfolioBalance[]> {
+    return this.request<PortfolioBalance[]>('/portfolio/balances');
   }
 
   async resetPortfolio(): Promise<{ success: boolean; portfolio: Portfolio }> {

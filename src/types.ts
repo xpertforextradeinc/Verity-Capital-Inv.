@@ -79,6 +79,15 @@ export interface Portfolio {
   updatedAt: string;
 }
 
+export interface PortfolioBalance {
+  asset: string;
+  available: number;
+  locked: number;
+  marketValue: number;
+  averageCost: number;
+  unrealizedPnl: number;
+}
+
 export type OrderSide = 'BUY' | 'SELL';
 export type OrderType = 'MARKET' | 'LIMIT';
 export type OrderStatus = 'EXECUTED' | 'PENDING' | 'CANCELLED' | 'REJECTED';

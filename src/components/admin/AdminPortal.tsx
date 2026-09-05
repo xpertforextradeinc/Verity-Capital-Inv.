@@ -88,7 +88,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToCustomer }) =>
         api.getAdminOrders(),
         api.getAdminInstruments(),
         api.getAdminAuditEvents(),
-        api.getTransfers().catch(() => []),
+        api.adminGetTransfers().catch(() => []),
       ]);
       setHealth(h);
       setUsers(u);

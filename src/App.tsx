@@ -10,7 +10,8 @@ import {
   AppNotification,
   AuditEvent,
   OrderSide,
-  OrderType
+  OrderType,
+  TransferRecord
 } from './types.ts';
 import { api } from './services/api.ts';
 import { Header } from './components/common/Header.tsx';
@@ -36,6 +37,7 @@ import { AssetSpecsModal } from './components/customer/AssetSpecsModal.tsx';
 import { KycModal } from './components/customer/KycModal.tsx';
 import { AuthModal } from './components/auth/AuthModal.tsx';
 import { ShieldAlert, TrendingUp, Info } from 'lucide-react';
+import { hasSupabaseClient, signInWithSupabase, signUpWithSupabase, supabase } from './services/supabase.ts';
 
 export default function App() {
   // Application State
@@ -48,9 +50,10 @@ export default function App() {
   const [insights, setInsights] = useState<AiInsight[]>([]);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [activity, setActivity] = useState<AuditEvent[]>([]);
+  const [transfers, setTransfers] = useState<TransferRecord[]>([]);
 
   // Navigation & UI State
-  const [currentTab, setCurrentTab] = useState<string>('dashboard');
+  const [currentTab, setCurrentTab] = useState<string>('home');
   const [selectedInstrument, setSelectedInstrument] = useState<Instrument | null>(null);
   const [isTradeModalOpen, setIsTradeModalOpen] = useState<boolean>(false);
   const [tradeModalInstrument, setTradeModalInstrument] = useState<Instrument | null>(null);
@@ -85,13 +88,14 @@ export default function App() {
         setUser(currentUser);
 
         if (currentUser) {
-          const [port, pos, ords, wls, notifs, act] = await Promise.all([
+          const [port, pos, ords, wls, notifs, act, trs] = await Promise.all([
             api.getPortfolio(),
             api.getPositions(),
             api.getOrders(),
             api.getWatchlists(),
             api.getNotifications(),
             api.getActivity(),
+            api.getTransfers(),
           ]);
           setPortfolio(port);
           setPositions(pos);
@@ -99,6 +103,7 @@ export default function App() {
           setWatchlists(wls);
           setNotifications(notifs);
           setActivity(act);
+          setTransfers(trs);
         }
       } catch (err) {
         // Not authenticated
@@ -111,9 +116,44 @@ export default function App() {
     }
   }, []);
 
+  const syncSupabaseUser = useCallback(async (authUser: {
+    id: string;
+    email?: string;
+    access_token?: string;
+    user_metadata?: { first_name?: string; last_name?: string };
+  }) => {
+    if (!authUser.email) throw new Error('Your Supabase account does not have an email address.');
+    const data = await api.syncSupabaseUser({
+      id: authUser.id,
+      email: authUser.email,
+      firstName: authUser.user_metadata?.first_name,
+      lastName: authUser.user_metadata?.last_name,
+    }, authUser.access_token);
+    setUser(data.user);
+    setCurrentTab(data.user.role === 'ADMIN' ? 'admin-overview' : 'dashboard');
+    await fetchData();
+  }, [fetchData]);
+
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    if (!hasSupabaseClient() || !supabase) return;
+    let mounted = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (mounted && data.session?.user) {
+        void syncSupabaseUser({ ...data.session.user, access_token: data.session.access_token });
+      }
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (mounted && session?.user) void syncSupabaseUser({ ...session.user, access_token: session.access_token });
+    });
+    return () => {
+      mounted = false;
+      listener.subscription.unsubscribe();
+    };
+  }, [syncSupabaseUser]);
 
   // Periodic polling to sync with simulated market tick engine (every 4 seconds)
   useEffect(() => {
@@ -233,6 +273,13 @@ export default function App() {
   };
 
   const handleLogin = async (email: string, pass: string) => {
+    if (hasSupabaseClient()) {
+      const { data, error } = await signInWithSupabase(email, pass);
+      if (error) throw error;
+      if (!data.user) throw new Error('Supabase did not return an authenticated user.');
+      await syncSupabaseUser({ ...data.user, access_token: data.session?.access_token });
+      return;
+    }
     const data = await api.login(email, pass);
     setUser(data.user);
     setCurrentTab(data.user.role === 'ADMIN' ? 'admin-overview' : 'dashboard');
@@ -240,6 +287,15 @@ export default function App() {
   };
 
   const handleRegister = async (fName: string, lName: string, email: string, pass: string) => {
+    if (hasSupabaseClient()) {
+      const { data, error } = await signUpWithSupabase(fName, lName, email, pass);
+      if (error) throw error;
+      if (!data.session || !data.user) {
+        throw new Error('Account created. Check your email to confirm the account, then sign in.');
+      }
+      await syncSupabaseUser({ ...data.user, access_token: data.session?.access_token });
+      return;
+    }
     const data = await api.register(fName, lName, email, pass);
     setUser(data.user);
     setCurrentTab('dashboard');
@@ -261,6 +317,7 @@ export default function App() {
   };
 
   const handleLogout = async () => {
+    if (supabase) await supabase.auth.signOut();
     await api.logout();
     setUser(null);
     setPortfolio(null);
