@@ -38,6 +38,7 @@ returns boolean language sql stable security definer set search_path = public as
     where id = auth.uid()
       and upper(role::text) = 'ADMIN'
       and upper(coalesce(account_status, 'ACTIVE')) = 'ACTIVE'
+      and (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin'
   );
 $$;
 

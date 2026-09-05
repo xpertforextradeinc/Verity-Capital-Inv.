@@ -30,6 +30,7 @@ import { AiInsightsView } from './components/customer/AiInsightsView.tsx';
 import { ActivityView } from './components/customer/ActivityView.tsx';
 import { SettingsView } from './components/customer/SettingsView.tsx';
 import { AdminSupervisorView } from './components/admin/AdminSupervisorView.tsx';
+import { AdminLogin } from './components/admin/AdminLogin.tsx';
 import { MediaVaultView } from './components/media/MediaVaultView.tsx';
 import { TradeModal } from './components/customer/TradeModal.tsx';
 import { BrokerDeskAssistant } from './components/customer/BrokerDeskAssistant.tsx';
@@ -59,6 +60,7 @@ export default function App() {
     const path = window.location.pathname.replace(/^\//, '');
     if (path === 'open-account') return 'onboarding';
     if (path === 'admin') return 'admin-overview';
+    if (path === 'admin/login') return 'admin-login';
     return path || 'home';
   });
   const [selectedInstrument, setSelectedInstrument] = useState<Instrument | null>(null);
@@ -78,6 +80,7 @@ export default function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [supabaseRole, setSupabaseRole] = useState<string | null>(null);
 
   // Fetch all initial data
   const fetchData = useCallback(async () => {
@@ -127,9 +130,10 @@ export default function App() {
     id: string;
     email?: string;
     access_token?: string;
-    user_metadata?: { first_name?: string; last_name?: string };
+    user_metadata?: { first_name?: string; last_name?: string; role?: string };
   }) => {
     if (!authUser.email) throw new Error('Your Supabase account does not have an email address.');
+    setSupabaseRole(authUser.user_metadata?.role || null);
     const data = await api.syncSupabaseUser({
       id: authUser.id,
       email: authUser.email,
@@ -362,17 +366,17 @@ export default function App() {
   };
 
   const navigateApp = (tab: string) => {
-    const route = tab.startsWith('admin') ? '/admin' : tab === 'home' ? '/' : `/${tab}`;
+    const route = tab === 'admin-login' ? '/admin/login' : tab.startsWith('admin') ? '/admin' : tab === 'home' ? '/' : `/${tab}`;
     window.history.pushState({}, '', route);
     setCurrentTab(tab);
   };
 
   useEffect(() => {
-    if (!isLoading && isAdminTab && user?.role !== 'ADMIN') {
-      window.history.replaceState({}, '', '/login');
-      setCurrentTab('login');
+    if (!isLoading && isAdminTab && currentTab !== 'admin-login' && supabaseRole !== 'admin') {
+      window.history.replaceState({}, '', '/admin/login');
+      setCurrentTab('admin-login');
     }
-  }, [isAdminTab, isLoading, user?.role]);
+  }, [currentTab, isAdminTab, isLoading, supabaseRole]);
 
   const renderContent = () => {
     if (isLoading) {
@@ -399,6 +403,21 @@ export default function App() {
       return <Markets onOpenAuth={user ? undefined : (mode) => setPublicRoute(mode === 'login' ? 'login' : 'onboarding')} />;
     }
 
+    if (currentTab === 'admin-login') {
+      return <AdminLogin
+        onBack={() => setPublicRoute('login')}
+        onEmailLogin={async (email, password) => {
+          const { data, error } = await signInWithSupabase(email, password);
+          if (error) throw error;
+          if (data.user?.user_metadata?.role !== 'admin') {
+            await supabase?.auth.signOut();
+            throw new Error('This account is not authorized for administrator access.');
+          }
+          if (data.user) await syncSupabaseUser({ ...data.user, access_token: data.session?.access_token });
+        }}
+      />;
+    }
+
     if (currentTab === 'login' || currentTab === 'onboarding' || currentTab === 'open-account') {
       return <InstitutionalAccess
         mode={currentTab === 'login' ? 'login' : 'onboarding'}
@@ -423,7 +442,7 @@ export default function App() {
     }
 
     if (isAdminTab) {
-      if (user?.role === 'ADMIN') {
+      if (supabaseRole === 'admin') {
         return <AdminSupervisorView />;
       }
       return (
