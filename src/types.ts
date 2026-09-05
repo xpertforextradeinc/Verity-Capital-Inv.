@@ -263,4 +263,26 @@ export interface DriveAboutInfo {
   storageQuota?: DriveStorageQuota;
 }
 
+// Interactive Institutional Broker Assistant Types
+export interface BrokerChatMessage {
+  id: string;
+  sender: 'USER' | 'BROKER';
+  text: string;
+  timestamp: string;
+  suggestedAction?: {
+    type: 'NAVIGATE' | 'SPOT_TRADE_DRAFT' | 'CUSTODY_TRANSFER' | 'KYC_ONBOARDING' | 'FACTUAL_SPECS';
+    label: string;
+    payload?: any;
+  };
+}
+
+export interface BrokerChatResponse {
+  reply: string;
+  suggestedAction?: {
+    type: 'NAVIGATE' | 'SPOT_TRADE_DRAFT' | 'CUSTODY_TRANSFER' | 'KYC_ONBOARDING' | 'FACTUAL_SPECS';
+    label: string;
+    payload?: any;
+  };
+}
+
 

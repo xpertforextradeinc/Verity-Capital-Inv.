@@ -1,0 +1,392 @@
+--- src/App.tsx
++++ src/App.tsx
+@@ -23,6 +23,8 @@
+ import { api } from './services/api.ts';
+ import { Header } from './components/common/Header.tsx';
+ import { TickerBar } from './components/common/TickerBar.tsx';
++import { PublicLayout } from './components/layout/PublicLayout.tsx';
++import { AuthenticatedLayout } from './components/layout/AuthenticatedLayout.tsx';
+ import { LandingPage } from './components/public/LandingPage.tsx';
+ import { InfoPages } from './components/public/InfoPages.tsx';
+ import { DashboardView } from './components/customer/DashboardView.tsx';
+@@ -300,37 +302,23 @@
+   };
+ 
++  const publicTabs = ['home', 'about', 'features', 'risk-disclosure', 'terms', 'privacy', 'security'];
++  const isPublicTab = publicTabs.includes(currentTab);
++  const isAdminTab = currentTab.startsWith('admin');
++
++  const renderContent = () => {
++    if (isLoading) {
++      return (
++        <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-3">
++          <div className="w-8 h-8 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
++          <span className="text-xs text-zinc-400 font-mono">Loading Verity-Capital Inv Simulated Engine...</span>
++        </div>
++      );
++    }
++
++    if (currentTab === 'home') {
++      return (
++        <LandingPage
++          instruments={instruments}
++          onOpenTrade={handleOpenTrade}
++          onOpenAuth={handleOpenAuth}
++          onSelectTab={setCurrentTab}
++        />
++      );
++    }
++
++    if (publicTabs.includes(currentTab) && currentTab !== 'home') {
++      return (
++        <InfoPages
++          page={currentTab as any}
++          onBack={() => setCurrentTab(user ? 'dashboard' : 'home')}
++          onOpenTrade={() => handleOpenTrade()}
++        />
++      );
++    }
++
++    if (isAdminTab) {
++      if (user?.role === 'ADMIN') {
++        return <AdminPortal onBackToCustomer={() => setCurrentTab('dashboard')} />;
++      }
++      return (
++        <div className="flex flex-col items-center justify-center py-32 text-center animate-in fade-in zoom-in-95">
++          <ShieldAlert className="w-16 h-16 text-rose-500 mb-4 mx-auto" />
++          <h2 className="text-2xl font-bold text-white mb-2">Access Restricted</h2>
++          <p className="text-zinc-400 mb-6 max-w-md mx-auto">
++            You do not have the required administrative privileges to view this section. This attempt has been logged for compliance monitoring.
++          </p>
++          <button
++            onClick={() => setCurrentTab('dashboard')}
++            className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-lg transition-colors cursor-pointer"
++          >
++            Return to Authorized Area
++          </button>
++        </div>
++      );
++    }
++
++    if (!user) {
++      return (
++        <div className="flex flex-col items-center justify-center py-32 text-center">
++          <h2 className="text-2xl font-bold text-white mb-2">Authentication Required</h2>
++          <p className="text-zinc-400 mb-6 max-w-md mx-auto">Please log in to access the Verity-Capital Inv dashboard.</p>
++          <button
++            onClick={() => handleOpenAuth('login')}
++            className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold rounded-lg transition-colors cursor-pointer"
++          >
++            Sign In Securely
++          </button>
++        </div>
++      );
++    }
++
++    // Authenticated Views
++    switch (currentTab) {
++      case 'dashboard':
++        return (
++          <DashboardView
++            portfolio={portfolio}
++            positions={positions}
++            orders={orders}
++            instruments={instruments}
++            onOpenTrade={handleOpenTrade}
++            onOpenCustody={handleOpenCustody}
++            onOpenSpecs={handleOpenSpecs}
++            onNavigateTab={setCurrentTab}
++            onKycOpen={handleOpenKyc}
++          />
++        );
++      case 'portfolio':
++        return (
++          <PortfolioView
++            portfolio={portfolio}
++            positions={positions}
++            instruments={instruments}
++            onOpenTrade={handleOpenTrade}
++            onOpenCustody={handleOpenCustody}
++          />
++        );
++      case 'markets':
++        return (
++          <MarketsView
++            instruments={instruments}
++            selectedInstrument={selectedInstrument}
++            onSelectInstrument={handleSelectInstrument}
++            onOpenTrade={handleOpenTrade}
++            onOpenSpecs={handleOpenSpecs}
++          />
++        );
++      case 'watchlists':
++        return (
++          <WatchlistsView
++            watchlists={watchlists}
++            instruments={instruments}
++            onOpenTrade={handleOpenTrade}
++            onSelectInstrument={handleSelectInstrument}
++            onCreateWatchlist={handleCreateWatchlist}
++            onRemoveFromWatchlist={handleRemoveFromWatchlist}
++            onAddToWatchlist={handleAddToWatchlist}
++            onNavigateAiInsight={(inst) => {
++              setSelectedInstrument(inst);
++              setCurrentTab('insights');
++            }}
++          />
++        );
++      case 'orders':
++        return (
++          <OrdersView
++            orders={orders}
++            onCancelOrder={handleCancelOrder}
++            onOpenTrade={() => handleOpenTrade()}
++            onNavigateTab={setCurrentTab}
++          />
++        );
++      case 'broker-desk':
++      case 'insights':
++        return (
++          <BrokerDeskAssistant
++            portfolio={portfolio}
++            positions={positions}
++            instruments={instruments}
++            onOpenTrade={handleOpenTrade}
++            onOpenCustody={handleOpenCustody}
++            onOpenKyc={handleOpenKyc}
++            onOpenSpecs={handleOpenSpecs}
++            onNavigateTab={setCurrentTab}
++          />
++        );
++      case 'activity':
++        return <ActivityView activity={activity} />;
++      case 'settings-profile':
++        return <SettingsView user={user} />;
++      case 'google-drive':
++        return (
++          <GoogleDriveView
++            portfolio={portfolio}
++            positions={positions}
++            orders={orders}
++            insights={insights}
++          />
++        );
++      default:
++        return null;
++    }
++  };
++
+   return (
+-    <div className="min-h-screen bg-[#070A10] text-zinc-100 flex flex-col font-sans selection:bg-emerald-500/30 selection:text-emerald-300">
+-      {/* Top Header */}
+-      <Header
+-        user={user}
+-        portfolio={portfolio}
+-        instruments={instruments}
+-        notifications={notifications}
+-        currentTab={currentTab}
+-        onSelectTab={setCurrentTab}
+-        onOpenTrade={handleOpenTrade}
+-        onResetPortfolio={handleResetPortfolio}
+-        onSwitchDemo={handleSwitchDemo}
+-        onLogout={handleLogout}
+-        onOpenAuth={handleOpenAuth}
+-      />
+-
+-      {/* Live Market Ticker Bar */}
+-      {instruments.length > 0 && (
+-        <TickerBar
+-          instruments={instruments}
+-          onSelectInstrument={handleSelectInstrument}
+-        />
+-      )}
+-
+-      {/* Main Content Area */}
+-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+-        {/* Loading Spinner */}
+-        {isLoading ? (
+-          <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-3">
+-            <div className="w-8 h-8 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
+-            <span className="text-xs text-zinc-400 font-mono">Loading Verity-Capital Inv Simulated Engine...</span>
+-          </div>
+-        ) : (
+-          <>
+-            {/* View Routing */}
+-            {currentTab === 'home' && (
+-              <LandingPage
+-                instruments={instruments}
+-                onOpenTrade={handleOpenTrade}
+-                onOpenAuth={handleOpenAuth}
+-                onSelectTab={setCurrentTab}
+-              />
+-            )}
+-
+-            {currentTab === 'dashboard' && (
+-              <DashboardView
+-                portfolio={portfolio}
+-                positions={positions}
+-                orders={orders}
+-                instruments={instruments}
+-                onOpenTrade={handleOpenTrade}
+-                onOpenCustody={handleOpenCustody}
+-                onOpenSpecs={handleOpenSpecs}
+-                onNavigateTab={setCurrentTab}
+-                onKycOpen={handleOpenKyc}
+-              />
+-            )}
+-
+-            {currentTab === 'portfolio' && (
+-              <PortfolioView
+-                portfolio={portfolio}
+-                positions={positions}
+-                instruments={instruments}
+-                onOpenTrade={handleOpenTrade}
+-                onOpenCustody={handleOpenCustody}
+-              />
+-            )}
+-
+-            {currentTab === 'markets' && (
+-              <MarketsView
+-                instruments={instruments}
+-                selectedInstrument={selectedInstrument}
+-                onSelectInstrument={handleSelectInstrument}
+-                onOpenTrade={handleOpenTrade}
+-                onOpenSpecs={handleOpenSpecs}
+-              />
+-            )}
+-
+-            {currentTab === 'watchlists' && (
+-              <WatchlistsView
+-                watchlists={watchlists}
+-                instruments={instruments}
+-                onOpenTrade={handleOpenTrade}
+-                onSelectInstrument={handleSelectInstrument}
+-                onCreateWatchlist={handleCreateWatchlist}
+-                onRemoveFromWatchlist={handleRemoveFromWatchlist}
+-                onAddToWatchlist={handleAddToWatchlist}
+-                onNavigateAiInsight={(inst) => {
+-                  setSelectedInstrument(inst);
+-                  setCurrentTab('insights');
+-                }}
+-              />
+-            )}
+-
+-            {currentTab === 'orders' && (
+-              <OrdersView
+-                orders={orders}
+-                onCancelOrder={handleCancelOrder}
+-                onOpenTrade={() => handleOpenTrade()}
+-                onNavigateTab={setCurrentTab}
+-              />
+-            )}
+-
+-            {currentTab === 'broker-desk' && (
+-              <BrokerDeskAssistant
+-                portfolio={portfolio}
+-                positions={positions}
+-                instruments={instruments}
+-                onOpenTrade={handleOpenTrade}
+-                onOpenCustody={handleOpenCustody}
+-                onOpenKyc={handleOpenKyc}
+-                onOpenSpecs={handleOpenSpecs}
+-                onNavigateTab={setCurrentTab}
+-              />
+-            )}
+-
+-            {currentTab === 'insights' && (
+-              <BrokerDeskAssistant
+-                portfolio={portfolio}
+-                positions={positions}
+-                instruments={instruments}
+-                onOpenTrade={handleOpenTrade}
+-                onOpenCustody={handleOpenCustody}
+-                onOpenKyc={handleOpenKyc}
+-                onOpenSpecs={handleOpenSpecs}
+-                onNavigateTab={setCurrentTab}
+-              />
+-            )}
+-
+-            {currentTab === 'activity' && (
+-              <ActivityView activity={activity} />
+-            )}
+-
+-            {currentTab === 'settings-profile' && user && (
+-              <SettingsView user={user} />
+-            )}
+-
+-            {currentTab === 'google-drive' && (
+-              <GoogleDriveView
+-                portfolio={portfolio}
+-                positions={positions}
+-                orders={orders}
+-                insights={insights}
+-              />
+-            )}
+-
+-            {currentTab.startsWith('admin') && user?.role === 'ADMIN' && (
+-              <AdminPortal onBackToCustomer={() => setCurrentTab('dashboard')} />
+-            )}
+-
+-            {currentTab.startsWith('admin') && user?.role !== 'ADMIN' && (
+-              <div className="flex flex-col items-center justify-center py-32 text-center animate-in fade-in zoom-in-95">
+-                <ShieldAlert className="w-16 h-16 text-rose-500 mb-4 mx-auto" />
+-                <h2 className="text-2xl font-bold text-white mb-2">Access Restricted</h2>
+-                <p className="text-zinc-400 mb-6 max-w-md mx-auto">
+-                  You do not have the required administrative privileges to view this section. This attempt has been logged for compliance monitoring.
+-                </p>
+-                <button
+-                  onClick={() => setCurrentTab('dashboard')}
+-                  className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-lg transition-colors cursor-pointer"
+-                >
+-                  Return to Authorized Area
+-                </button>
+-              </div>
+-            )}
+-
+-            {/* Info Pages (About, Features, Risk Disclosure, Terms, Privacy, Security) */}
+-            {(['about', 'features', 'risk-disclosure', 'terms', 'privacy', 'security'] as const).includes(currentTab as any) && (
+-              <InfoPages
+-                page={currentTab as any}
+-                onBack={() => setCurrentTab(user ? 'dashboard' : 'home')}
+-                onOpenTrade={() => handleOpenTrade()}
+-              />
+-            )}
+-          </>
+-        )}
+-      </main>
+-
++    <>
++      {isPublicTab ? (
++        <PublicLayout
++          currentTab={currentTab}
++          onSelectTab={setCurrentTab}
++          onOpenAuth={handleOpenAuth}
++        >
++          {renderContent()}
++        </PublicLayout>
++      ) : isAdminTab ? (
++        <div className="min-h-screen bg-[#070A10] text-zinc-100 flex flex-col font-sans selection:bg-emerald-500/30 selection:text-emerald-300">
++          <main className="flex-1 w-full mx-auto p-0 m-0">
++            {renderContent()}
++          </main>
++        </div>
++      ) : (
++        <AuthenticatedLayout
++          user={user as User}
++          portfolio={portfolio}
++          instruments={instruments}
++          notifications={notifications}
++          currentTab={currentTab}
++          onSelectTab={setCurrentTab}
++          onOpenTrade={handleOpenTrade}
++          onResetPortfolio={handleResetPortfolio}
++          onSwitchDemo={handleSwitchDemo}
++          onLogout={handleLogout}
++          onSelectInstrument={handleSelectInstrument}
++        >
++          {renderContent()}
++        </AuthenticatedLayout>
++      )}
++      
+       {/* Trade Modal with Explicit Confirmation */}
+       <TradeModal

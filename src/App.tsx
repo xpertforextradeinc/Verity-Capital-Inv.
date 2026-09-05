@@ -15,6 +15,8 @@ import {
 import { api } from './services/api.ts';
 import { Header } from './components/common/Header.tsx';
 import { TickerBar } from './components/common/TickerBar.tsx';
+import { PublicLayout } from './components/layout/PublicLayout.tsx';
+import { InstitutionalLayout } from './components/layout/InstitutionalLayout.tsx';
 import { LandingPage } from './components/public/LandingPage.tsx';
 import { InfoPages } from './components/public/InfoPages.tsx';
 import { DashboardView } from './components/customer/DashboardView.tsx';
@@ -26,8 +28,12 @@ import { AiInsightsView } from './components/customer/AiInsightsView.tsx';
 import { ActivityView } from './components/customer/ActivityView.tsx';
 import { SettingsView } from './components/customer/SettingsView.tsx';
 import { AdminPortal } from './components/admin/AdminPortal.tsx';
-import { GoogleDriveView } from './components/drive/GoogleDriveView.tsx';
+import { MediaVaultView } from './components/media/MediaVaultView.tsx';
 import { TradeModal } from './components/customer/TradeModal.tsx';
+import { BrokerDeskAssistant } from './components/customer/BrokerDeskAssistant.tsx';
+import { CustodyTransfersModal } from './components/customer/CustodyTransfersModal.tsx';
+import { AssetSpecsModal } from './components/customer/AssetSpecsModal.tsx';
+import { KycModal } from './components/customer/KycModal.tsx';
 import { AuthModal } from './components/auth/AuthModal.tsx';
 import { ShieldAlert, TrendingUp, Info } from 'lucide-react';
 
@@ -48,6 +54,17 @@ export default function App() {
   const [selectedInstrument, setSelectedInstrument] = useState<Instrument | null>(null);
   const [isTradeModalOpen, setIsTradeModalOpen] = useState<boolean>(false);
   const [tradeModalInstrument, setTradeModalInstrument] = useState<Instrument | null>(null);
+  const [tradeModalDraft, setTradeModalDraft] = useState<{
+    symbol?: string;
+    side?: OrderSide;
+    orderType?: OrderType;
+    quantity?: number;
+    limitPrice?: number;
+  } | null>(null);
+  const [isCustodyModalOpen, setIsCustodyModalOpen] = useState<boolean>(false);
+  const [isKycModalOpen, setIsKycModalOpen] = useState<boolean>(false);
+  const [isSpecsModalOpen, setIsSpecsModalOpen] = useState<boolean>(false);
+  const [specsModalSymbol, setSpecsModalSymbol] = useState<string>('BTC');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -88,7 +105,7 @@ export default function App() {
         setUser(null);
       }
     } catch (err) {
-      console.error('Error loading initial Quantix data:', err);
+      console.error('Error loading initial Verity-Capital Inv data:', err);
     } finally {
       setIsLoading(false);
     }
@@ -129,9 +146,31 @@ export default function App() {
     setCurrentTab('markets');
   };
 
-  const handleOpenTrade = (inst?: Instrument) => {
-    setTradeModalInstrument(inst || selectedInstrument || instruments[0] || null);
+  const handleOpenTrade = (
+    instOrDraft?: Instrument | { symbol?: string; side?: OrderSide; orderType?: OrderType; quantity?: number; limitPrice?: number }
+  ) => {
+    if (instOrDraft && 'price' in instOrDraft) {
+      setTradeModalInstrument(instOrDraft);
+      setTradeModalDraft(null);
+    } else if (instOrDraft && 'symbol' in instOrDraft) {
+      const found = instruments.find(
+        (i) => i.symbol.toUpperCase().startsWith(instOrDraft.symbol!.toUpperCase()) ||
+               i.name.toUpperCase() === instOrDraft.symbol!.toUpperCase()
+      );
+      if (found) setTradeModalInstrument(found);
+      setTradeModalDraft(instOrDraft);
+    } else {
+      setTradeModalInstrument(selectedInstrument || instruments[0] || null);
+      setTradeModalDraft(null);
+    }
     setIsTradeModalOpen(true);
+  };
+
+  const handleOpenCustody = () => setIsCustodyModalOpen(true);
+  const handleOpenKyc = () => setIsKycModalOpen(true);
+  const handleOpenSpecs = (sym: string = 'BTC') => {
+    setSpecsModalSymbol(sym);
+    setIsSpecsModalOpen(true);
   };
 
   const handleExecuteTrade = async (trade: {
@@ -262,175 +301,230 @@ export default function App() {
     return newInsight;
   };
 
-  return (
-    <div className="min-h-screen bg-[#070A10] text-zinc-100 flex flex-col font-sans selection:bg-emerald-500/30 selection:text-emerald-300">
-      {/* Top Header */}
-      <Header
-        user={user}
-        portfolio={portfolio}
-        instruments={instruments}
-        notifications={notifications}
-        currentTab={currentTab}
-        onSelectTab={setCurrentTab}
-        onOpenTrade={handleOpenTrade}
-        onResetPortfolio={handleResetPortfolio}
-        onSwitchDemo={handleSwitchDemo}
-        onLogout={handleLogout}
-        onOpenAuth={handleOpenAuth}
-      />
 
-      {/* Live Market Ticker Bar */}
-      {instruments.length > 0 && (
-        <TickerBar
+  const publicTabs = ['home', 'about', 'features', 'risk-disclosure', 'terms', 'privacy', 'security'];
+  const isPublicTab = publicTabs.includes(currentTab);
+  const isAdminTab = currentTab.startsWith('admin');
+
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-3">
+          <div className="w-8 h-8 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
+          <span className="text-xs text-zinc-400 font-mono">Initializing Verity-Capital Institutional Engine...</span>
+        </div>
+      );
+    }
+
+    if (currentTab === 'home') {
+      return (
+        <LandingPage
           instruments={instruments}
-          onSelectInstrument={handleSelectInstrument}
+          onOpenTrade={handleOpenTrade}
+          onOpenAuth={handleOpenAuth}
+          onSelectTab={setCurrentTab}
         />
+      );
+    }
+
+    if (publicTabs.includes(currentTab) && currentTab !== 'home') {
+      return (
+        <InfoPages
+          page={currentTab as any}
+          onBack={() => setCurrentTab(user ? 'dashboard' : 'home')}
+          onOpenTrade={() => handleOpenTrade()}
+        />
+      );
+    }
+
+    if (isAdminTab) {
+      if (user?.role === 'ADMIN') {
+        return <AdminPortal onBackToCustomer={() => setCurrentTab('dashboard')} />;
+      }
+      return (
+        <div className="flex flex-col items-center justify-center py-32 text-center animate-in fade-in zoom-in-95">
+          <ShieldAlert className="w-16 h-16 text-rose-500 mb-4 mx-auto" />
+          <h2 className="text-2xl font-bold text-white mb-2">Access Restricted</h2>
+          <p className="text-zinc-400 mb-6 max-w-md mx-auto">
+            You do not have the required administrative privileges to view this section. This attempt has been logged for compliance monitoring.
+          </p>
+          <button
+            onClick={() => setCurrentTab('dashboard')}
+            className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-lg transition-colors cursor-pointer"
+          >
+            Return to Authorized Area
+          </button>
+        </div>
+      );
+    }
+
+    if (!user) {
+      return (
+        <div className="flex flex-col items-center justify-center py-32 text-center">
+          <h2 className="text-2xl font-bold text-white mb-2">Authentication Required</h2>
+          <p className="text-zinc-400 mb-6 max-w-md mx-auto">Please log in to access the Verity-Capital Inv dashboard.</p>
+          <button
+            onClick={() => handleOpenAuth('login')}
+            className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold rounded-lg transition-colors cursor-pointer"
+          >
+            Sign In Securely
+          </button>
+        </div>
+      );
+    }
+
+    // Authenticated Views
+    switch (currentTab) {
+      case 'dashboard':
+        return (
+          <DashboardView
+            portfolio={portfolio}
+            positions={positions}
+            orders={orders}
+            instruments={instruments}
+            onOpenTrade={handleOpenTrade}
+            onOpenCustody={handleOpenCustody}
+            onOpenSpecs={handleOpenSpecs}
+            onNavigateTab={setCurrentTab}
+            onKycOpen={handleOpenKyc}
+          />
+        );
+      case 'portfolio':
+        return (
+          <PortfolioView
+            portfolio={portfolio}
+            positions={positions}
+            instruments={instruments}
+            onOpenTrade={handleOpenTrade}
+            onOpenCustody={handleOpenCustody}
+          />
+        );
+      case 'markets':
+        return (
+          <MarketsView
+            instruments={instruments}
+            selectedInstrument={selectedInstrument}
+            onSelectInstrument={handleSelectInstrument}
+            onOpenTrade={handleOpenTrade}
+            onOpenSpecs={handleOpenSpecs}
+          />
+        );
+      case 'watchlists':
+        return (
+          <WatchlistsView
+            watchlists={watchlists}
+            instruments={instruments}
+            onOpenTrade={handleOpenTrade}
+            onSelectInstrument={handleSelectInstrument}
+            onCreateWatchlist={handleCreateWatchlist}
+            onRemoveFromWatchlist={handleRemoveFromWatchlist}
+            onAddToWatchlist={handleAddToWatchlist}
+            onNavigateAiInsight={(inst) => {
+              setSelectedInstrument(inst);
+              setCurrentTab('insights');
+            }}
+          />
+        );
+      case 'orders':
+        return (
+          <OrdersView
+            orders={orders}
+            onCancelOrder={handleCancelOrder}
+            onOpenTrade={() => handleOpenTrade()}
+            onNavigateTab={setCurrentTab}
+          />
+        );
+      case 'broker-desk':
+      case 'insights':
+        return (
+          <BrokerDeskAssistant
+            portfolio={portfolio}
+            positions={positions}
+            instruments={instruments}
+            onOpenTrade={handleOpenTrade}
+            onOpenCustody={handleOpenCustody}
+            onOpenKyc={handleOpenKyc}
+            onOpenSpecs={handleOpenSpecs}
+            onNavigateTab={setCurrentTab}
+          />
+        );
+      case 'activity':
+        return <ActivityView activity={activity} />;
+      case 'settings-profile':
+        return <SettingsView user={user} />;
+      case 'media-vault':
+        return <MediaVaultView />;
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <>
+      {isPublicTab ? (
+        <PublicLayout
+          currentTab={currentTab}
+          onSelectTab={setCurrentTab}
+          onOpenAuth={handleOpenAuth}
+        >
+          {renderContent()}
+        </PublicLayout>
+      ) : isAdminTab ? (
+        <div className="min-h-screen bg-[#070A10] text-zinc-100 flex flex-col font-sans selection:bg-emerald-500/30 selection:text-emerald-300">
+          <main className="flex-1 w-full mx-auto p-0 m-0">
+            {renderContent()}
+          </main>
+        </div>
+      ) : (
+        
+        <InstitutionalLayout
+          user={user as User}
+          portfolio={portfolio}
+          currentTab={currentTab}
+          onSelectTab={setCurrentTab}
+          onLogout={handleLogout}
+        >
+          {renderContent()}
+        </InstitutionalLayout>
+  
       )}
 
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Loading Spinner */}
-        {isLoading ? (
-          <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-3">
-            <div className="w-8 h-8 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
-            <span className="text-xs text-zinc-400 font-mono">Loading Quantix Simulated Engine...</span>
-          </div>
-        ) : (
-          <>
-            {/* View Routing */}
-            {currentTab === 'home' && (
-              <LandingPage
-                instruments={instruments}
-                onOpenTrade={handleOpenTrade}
-                onOpenAuth={handleOpenAuth}
-                onSelectTab={setCurrentTab}
-              />
-            )}
-
-            {currentTab === 'dashboard' && (
-              <DashboardView
-                portfolio={portfolio}
-                positions={positions}
-                orders={orders}
-                instruments={instruments}
-                insights={insights}
-                onOpenTrade={handleOpenTrade}
-                onSelectInstrument={handleSelectInstrument}
-                onNavigateTab={setCurrentTab}
-                onResetPortfolio={handleResetPortfolio}
-              />
-            )}
-
-            {currentTab === 'portfolio' && (
-              <PortfolioView
-                portfolio={portfolio}
-                positions={positions}
-                instruments={instruments}
-                onOpenTrade={handleOpenTrade}
-                onResetPortfolio={handleResetPortfolio}
-                onNavigateTab={setCurrentTab}
-              />
-            )}
-
-            {currentTab === 'markets' && (
-              <MarketsView
-                instruments={instruments}
-                selectedInstrument={selectedInstrument}
-                onSelectInstrument={setSelectedInstrument}
-                onOpenTrade={handleOpenTrade}
-                onToggleWatchlist={(instId) => {
-                  if (watchlists[0]) {
-                    if (watchlists[0].instrumentIds.includes(instId)) {
-                      handleRemoveFromWatchlist(watchlists[0].id, instId);
-                    } else {
-                      handleAddToWatchlist(watchlists[0].id, instId);
-                    }
-                  }
-                }}
-                onNavigateAiInsight={(inst) => {
-                  setSelectedInstrument(inst);
-                  setCurrentTab('insights');
-                }}
-              />
-            )}
-
-            {currentTab === 'watchlists' && (
-              <WatchlistsView
-                watchlists={watchlists}
-                instruments={instruments}
-                onOpenTrade={handleOpenTrade}
-                onSelectInstrument={handleSelectInstrument}
-                onCreateWatchlist={handleCreateWatchlist}
-                onRemoveFromWatchlist={handleRemoveFromWatchlist}
-                onAddToWatchlist={handleAddToWatchlist}
-                onNavigateAiInsight={(inst) => {
-                  setSelectedInstrument(inst);
-                  setCurrentTab('insights');
-                }}
-              />
-            )}
-
-            {currentTab === 'orders' && (
-              <OrdersView
-                orders={orders}
-                onCancelOrder={handleCancelOrder}
-                onOpenTrade={() => handleOpenTrade()}
-                onNavigateTab={setCurrentTab}
-              />
-            )}
-
-            {currentTab === 'insights' && (
-              <AiInsightsView
-                insights={insights}
-                instruments={instruments}
-                onGenerateInsight={handleGenerateInsight}
-                onOpenTrade={handleOpenTrade}
-                onNavigateTab={setCurrentTab}
-              />
-            )}
-
-            {currentTab === 'activity' && (
-              <ActivityView activity={activity} />
-            )}
-
-            {currentTab === 'settings-profile' && user && (
-              <SettingsView user={user} />
-            )}
-
-            {currentTab === 'google-drive' && (
-              <GoogleDriveView
-                portfolio={portfolio}
-                positions={positions}
-                orders={orders}
-                insights={insights}
-              />
-            )}
-
-            {currentTab.startsWith('admin') && (
-              <AdminPortal onBackToCustomer={() => setCurrentTab('dashboard')} />
-            )}
-
-            {/* Info Pages (About, Features, Risk Disclosure, Terms, Privacy) */}
-            {(['about', 'features', 'risk-disclosure', 'terms', 'privacy'] as const).includes(currentTab as any) && (
-              <InfoPages
-                page={currentTab as any}
-                onBack={() => setCurrentTab(user ? 'dashboard' : 'home')}
-                onOpenTrade={() => handleOpenTrade()}
-              />
-            )}
-          </>
-        )}
-      </main>
-
-      {/* Trade Modal */}
+      {/* Trade Modal with Explicit Confirmation */}
       <TradeModal
         isOpen={isTradeModalOpen}
-        onClose={() => setIsTradeModalOpen(false)}
+        onClose={() => {
+          setIsTradeModalOpen(false);
+          setTradeModalDraft(null);
+        }}
         instruments={instruments}
         selectedInstrument={tradeModalInstrument}
         portfolio={portfolio}
         positions={positions}
+        initialDraft={tradeModalDraft}
         onExecuteTrade={handleExecuteTrade}
+      />
+
+      {/* Custody & Transfers Modal */}
+      <CustodyTransfersModal
+        isOpen={isCustodyModalOpen}
+        onClose={() => setIsCustodyModalOpen(false)}
+        portfolio={portfolio}
+        onTransferSuccess={fetchData}
+      />
+
+      {/* Factual Asset Specifications Modal */}
+      <AssetSpecsModal
+        isOpen={isSpecsModalOpen}
+        onClose={() => setIsSpecsModalOpen(false)}
+        initialSymbol={specsModalSymbol}
+      />
+
+      {/* KYC & Onboarding Modal */}
+      <KycModal
+        isOpen={isKycModalOpen}
+        onClose={() => setIsKycModalOpen(false)}
+        user={user}
+        onCompleteKyc={fetchData}
       />
 
       {/* Auth Modal */}
@@ -452,9 +546,9 @@ export default function App() {
               <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-mono font-bold text-xs">
                 Q
               </div>
-              <span className="font-mono font-bold text-sm text-white">Quantix Exchange</span>
+              <span className="font-mono font-bold text-sm text-white">Verity-Capital Inv</span>
               <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-400 font-mono">
-                PAPER TRADING MVP
+                INSTITUTIONAL
               </span>
             </div>
 
@@ -505,11 +599,11 @@ export default function App() {
 
           <div className="pt-4 border-t border-zinc-900 text-[11px] text-zinc-500 leading-relaxed">
             <p>
-              © {new Date().getFullYear()} Quantix Exchange Inc. (quantixexchange.com). All rights reserved. FOR EDUCATIONAL SIMULATION AND PAPER-TRADING DEMONSTRATION PURPOSES ONLY. This platform does not execute live securities transactions, hold real customer funds, or operate as a licensed broker-dealer or investment adviser under FINRA, SEC, or CFTC jurisdiction.
+              © {new Date().getFullYear()} Verity-Capital Inv Inc. (verity-capital.com). All rights reserved. Institutional Brokerage Platform. Secure execution and custody services.
             </p>
           </div>
         </div>
       </footer>
-    </div>
+    </>
   );
 }

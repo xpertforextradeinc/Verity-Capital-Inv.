@@ -12,7 +12,8 @@ import {
   TradeRequest,
   TransferRecord,
   KycProfile,
-  FactualCryptoAsset
+  FactualCryptoAsset,
+  BrokerChatResponse
 } from '../types.ts';
 
 const API_BASE = '/api/v1';
@@ -22,16 +23,16 @@ class ApiService {
 
   constructor() {
     if (typeof window !== 'undefined') {
-      this.token = localStorage.getItem('quantix_token') || 'user_usr_customer_alex';
+      this.token = localStorage.getItem('verity_capital_inv_token') || 'user_usr_customer_alex';
     }
   }
 
   public setToken(token: string | null) {
     this.token = token;
     if (token) {
-      localStorage.setItem('quantix_token', token);
+      localStorage.setItem('verity_capital_inv_token', token);
     } else {
-      localStorage.removeItem('quantix_token');
+      localStorage.removeItem('verity_capital_inv_token');
     }
   }
 
@@ -193,6 +194,22 @@ class ApiService {
     return this.request<AiInsight>('/insights/generate', {
       method: 'POST',
       body: JSON.stringify({ instrumentId, context }),
+    });
+  }
+
+  // Interactive Verity-Capital Inv Broker Chat
+  async brokerChat(payload: {
+    message: string;
+    portfolioContext?: {
+      cashBalance: number;
+      totalEquity: number;
+      positions: { symbol: string; quantity: number; currentPrice: number; marketValue: number; unrealizedPnl: number }[];
+    };
+    kycTier?: string;
+  }): Promise<BrokerChatResponse> {
+    return this.request<BrokerChatResponse>('/broker-chat', {
+      method: 'POST',
+      body: JSON.stringify(payload),
     });
   }
 

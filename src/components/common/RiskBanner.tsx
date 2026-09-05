@@ -13,7 +13,7 @@ export const RiskBanner: React.FC<RiskBannerProps> = ({ onLearnMore, compact }) 
         <div className="flex items-center space-x-2">
           <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
           <span>
-            <strong className="text-amber-300 font-medium">Educational Simulation Notice:</strong> Past paper-trading performance does not guarantee future financial results. Quantix Exchange executes trades in a virtual environment.
+            <strong className="text-amber-300 font-medium">Educational Simulation Notice:</strong> Past paper-trading performance does not guarantee future financial results. Verity-Capital Inv executes trades in a virtual environment.
           </span>
         </div>
         {onLearnMore && (
@@ -44,7 +44,7 @@ export const RiskBanner: React.FC<RiskBannerProps> = ({ onLearnMore, compact }) 
               </span>
             </h4>
             <p className="text-xs text-zinc-400 mt-1 max-w-3xl leading-relaxed">
-              Quantix Exchange Version 1.0 is strictly an educational paper-trading MVP. It does not handle real customer deposits, fiat funds, live securities, or regulated exchange custody. AI-generated market summaries are strictly informational educational tools and must never be construed as financial advice or trade directives.
+              Verity-Capital Inv Version 1.0 is strictly an educational paper-trading MVP. It does not handle real customer deposits, fiat funds, live securities, or regulated exchange custody. AI-generated market summaries are strictly informational educational tools and must never be construed as financial advice or trade directives.
             </p>
           </div>
         </div>

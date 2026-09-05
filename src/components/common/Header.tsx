@@ -18,7 +18,7 @@ import {
   ShieldAlert,
   ChevronDown,
   Info,
-  HardDrive
+  Box
 } from 'lucide-react';
 import { User, Portfolio, AppNotification, Instrument } from '../../types.ts';
 
@@ -62,10 +62,10 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center space-x-2 mx-auto sm:mx-0">
           <Info className="w-3.5 h-3.5 text-amber-400 shrink-0" />
           <span className="font-medium tracking-wide">
-            SIMULATED PAPER-TRADING PLATFORM:
+            INSTITUTIONAL CRYPTO BROKERAGE:
           </span>
           <span className="text-amber-200/80 hidden md:inline">
-            No real securities, fiat currency, or customer funds are managed. All balances and executions are purely virtual.
+            Factual digital asset information, segregated cold custody, and spot executions upon explicit client confirmation. No financial advice or trading signals.
           </span>
         </div>
         <div className="hidden sm:flex items-center space-x-3 text-[11px] text-amber-200/70">
@@ -73,10 +73,10 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={() => onSelectTab('risk-disclosure')}
             className="hover:text-amber-300 underline underline-offset-2 transition-colors cursor-pointer"
           >
-            Risk Disclosure
+            Risk Disclosure & Compliance
           </button>
           <span>•</span>
-          <span>v1.0.0 MVP</span>
+          <span>BTC • ETH • SOL • XRP • ADA</span>
         </div>
       </div>
 
@@ -89,22 +89,22 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => onSelectTab(user ? 'dashboard' : 'home')}
               className="flex items-center space-x-2.5 group cursor-pointer focus:outline-none"
             >
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-600 via-indigo-600 to-emerald-500 p-0.5 shadow-lg shadow-cyan-950/40 flex items-center justify-center">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-600 via-amber-500 to-amber-400 p-0.5 shadow-lg shadow-amber-950/40 flex items-center justify-center">
                 <div className="w-full h-full bg-[#0B0F19] rounded-[10px] flex items-center justify-center">
-                  <TrendingUp className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition-transform" />
+                  <TrendingUp className="w-5 h-5 text-amber-400 group-hover:scale-110 transition-transform" />
                 </div>
               </div>
               <div className="text-left">
                 <div className="flex items-center space-x-1.5">
                   <span className="text-lg font-bold tracking-tight text-white font-mono">
-                    QUANTIX
+                    VERITY-CAPITAL
                   </span>
-                  <span className="text-xs px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono font-semibold">
-                    SIM
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-400 font-mono font-bold">
+                    INV
                   </span>
                 </div>
-                <div className="text-[10px] uppercase tracking-wider text-zinc-400 font-medium -mt-0.5">
-                  Exchange
+                <div className="text-[10px] uppercase tracking-wider text-amber-400/80 font-medium -mt-0.5">
+                  Digital Asset Brokerage
                 </div>
               </div>
             </button>
@@ -118,7 +118,7 @@ export const Header: React.FC<HeaderProps> = ({
                       onClick={() => onSelectTab('admin-overview')}
                       className={`px-3 py-1.5 rounded-lg transition-colors flex items-center space-x-1.5 cursor-pointer ${
                         currentTab.startsWith('admin')
-                          ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30'
+                          ? 'bg-amber-600/20 text-amber-300 border border-amber-500/30'
                           : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
                       }`}
                     >
@@ -165,18 +165,18 @@ export const Header: React.FC<HeaderProps> = ({
                       }`}
                     >
                       <LineChart className="w-3.5 h-3.5" />
-                      <span>Markets</span>
+                      <span>Spot Markets</span>
                     </button>
                     <button
-                      onClick={() => onSelectTab('watchlists')}
+                      onClick={() => onSelectTab('broker-desk')}
                       className={`px-3 py-1.5 rounded-lg transition-colors flex items-center space-x-1.5 cursor-pointer ${
-                        currentTab === 'watchlists'
-                          ? 'bg-zinc-800 text-white font-semibold'
-                          : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
+                        currentTab === 'broker-desk'
+                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold'
+                          : 'text-amber-400/90 hover:text-amber-300 hover:bg-amber-950/20'
                       }`}
                     >
-                      <Bookmark className="w-3.5 h-3.5" />
-                      <span>Watchlists</span>
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Verity Desk</span>
                     </button>
                     <button
                       onClick={() => onSelectTab('orders')}
@@ -190,18 +190,18 @@ export const Header: React.FC<HeaderProps> = ({
                       <span>Orders</span>
                     </button>
                     <button
-                      onClick={() => onSelectTab('insights')}
+                      onClick={() => onSelectTab('watchlists')}
                       className={`px-3 py-1.5 rounded-lg transition-colors flex items-center space-x-1.5 cursor-pointer ${
-                        currentTab === 'insights'
-                          ? 'bg-emerald-950/40 text-emerald-300 border border-emerald-500/30 font-semibold'
-                          : 'text-emerald-400/90 hover:text-emerald-300 hover:bg-emerald-950/20'
+                        currentTab === 'watchlists'
+                          ? 'bg-zinc-800 text-white font-semibold'
+                          : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'
                       }`}
                     >
-                      <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>AI Insights</span>
+                      <Bookmark className="w-3.5 h-3.5" />
+                      <span>Watchlists</span>
                     </button>
                     <button
-                      onClick={() => onSelectTab('google-drive')}
+                      onClick={() => onSelectTab('media-vault')}
                       className={`px-3 py-1.5 rounded-lg transition-colors flex items-center space-x-1.5 cursor-pointer ${
                         currentTab === 'google-drive'
                           ? 'bg-blue-950/40 text-blue-300 border border-blue-500/30 font-semibold'
@@ -236,7 +236,7 @@ export const Header: React.FC<HeaderProps> = ({
                   Markets
                 </button>
                 <button
-                  onClick={() => onSelectTab('google-drive')}
+                  onClick={() => onSelectTab('media-vault')}
                   className={`hover:text-blue-300 transition-colors cursor-pointer flex items-center space-x-1 ${
                     currentTab === 'google-drive' ? 'text-blue-400 font-semibold' : ''
                   }`}
@@ -278,17 +278,6 @@ export const Header: React.FC<HeaderProps> = ({
                 title="Switch to Demo Customer with $100k balance"
               >
                 Customer ($100k)
-              </button>
-              <button
-                onClick={() => onSwitchDemo('ADMIN')}
-                className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
-                  user && user.role === 'ADMIN'
-                    ? 'bg-indigo-600 text-white font-medium shadow-sm'
-                    : 'text-zinc-400 hover:text-zinc-200'
-                }`}
-                title="Switch to Demo Admin"
-              >
-                Admin
               </button>
             </div>
 
@@ -431,7 +420,7 @@ export const Header: React.FC<HeaderProps> = ({
                           className="w-full px-3 py-1.5 text-left text-blue-300 hover:bg-blue-950/40 flex items-center space-x-2 cursor-pointer"
                         >
                           <HardDrive className="w-3.5 h-3.5 text-blue-400" />
-                          <span>Google Drive Sync</span>
+                          <span>3D Asset Vault</span>
                         </button>
                         {isAdmin && (
                           <button

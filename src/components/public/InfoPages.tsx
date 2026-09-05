@@ -2,7 +2,7 @@ import React from 'react';
 import { ShieldAlert, ArrowLeft, Lock, FileText, CheckCircle2, ShieldCheck, Building2, Coins } from 'lucide-react';
 
 interface InfoPagesProps {
-  page: 'about' | 'features' | 'risk-disclosure' | 'terms' | 'privacy';
+  page: 'about' | 'features' | 'risk-disclosure' | 'terms' | 'privacy' | 'security';
   onBack: () => void;
   onOpenTrade: () => void;
 }
@@ -29,7 +29,7 @@ export const InfoPages: React.FC<InfoPagesProps> = ({ page, onBack, onOpenTrade 
                 <Building2 className="w-4 h-4" />
                 <span>Institutional Profile</span>
               </div>
-              <h1 className="text-2xl font-bold text-white tracking-tight">About Quantix Brokerage</h1>
+              <h1 className="text-2xl font-bold text-white tracking-tight">About Verity-Capital Inv Brokerage</h1>
             </div>
             <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
               US Regulated Standard
@@ -38,10 +38,10 @@ export const InfoPages: React.FC<InfoPagesProps> = ({ page, onBack, onOpenTrade 
 
           <div className="space-y-4 text-sm leading-relaxed text-zinc-300">
             <p>
-              Quantix is America’s premier institutional digital asset brokerage platform, engineered from the ground up for high-net-worth investors, family offices, and commercial market participants who demand institutional execution standards, qualified cold-storage custody, and complete regulatory transparency.
+              Verity-Capital Inv is America’s premier institutional digital asset brokerage platform, engineered from the ground up for high-net-worth investors, family offices, and commercial market participants who demand institutional execution standards, qualified cold-storage custody, and complete regulatory transparency.
             </p>
             <p>
-              Unlike retail exchanges or automated algorithmic trading applications, Quantix operates strictly as a broker. We provide deep liquidity routing across Tier-1 OTC market makers and primary crypto order books, executing spot orders exclusively upon explicit client instruction.
+              Unlike retail exchanges or automated algorithmic trading applications, Verity-Capital Inv operates strictly as a broker. We provide deep liquidity routing across Tier-1 OTC market makers and primary crypto order books, executing spot orders exclusively upon explicit client instruction.
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
@@ -105,7 +105,7 @@ export const InfoPages: React.FC<InfoPagesProps> = ({ page, onBack, onOpenTrade 
 
           <div className="space-y-4 text-xs leading-relaxed text-zinc-300">
             <p>
-              Quantix Brokerage Inc. (“Quantix”, “we”, “us”) is committed to safeguarding the nonpublic personal information (NPI) of our institutional and individual clients in full compliance with the Gramm-Leach-Bliley Act (GLBA), the Bank Secrecy Act (BSA), FinCEN Customer Due Diligence (CDD) requirements, and applicable US state data privacy statutes.
+              Verity-Capital Inv Brokerage Inc. (“Verity-Capital Inv”, “we”, “us”) is committed to safeguarding the nonpublic personal information (NPI) of our institutional and individual clients in full compliance with the Gramm-Leach-Bliley Act (GLBA), the Bank Secrecy Act (BSA), FinCEN Customer Due Diligence (CDD) requirements, and applicable US state data privacy statutes.
             </p>
 
             <div className="p-4 rounded-xl bg-zinc-900/80 border border-zinc-800 space-y-2">
@@ -123,7 +123,7 @@ export const InfoPages: React.FC<InfoPagesProps> = ({ page, onBack, onOpenTrade 
             <div className="p-4 rounded-xl bg-zinc-900/80 border border-zinc-800 space-y-2">
               <h3 className="font-bold text-sm text-white">2. Strict Prohibition on Selling Data</h3>
               <p>
-                Quantix does NOT sell, rent, license, or trade client personal data or trading activity to third-party data brokers, marketing firms, or algorithmic high-frequency trading firms. Your order book flow remains private and unmonetized.
+                Verity-Capital Inv does NOT sell, rent, license, or trade client personal data or trading activity to third-party data brokers, marketing firms, or algorithmic high-frequency trading firms. Your order book flow remains private and unmonetized.
               </p>
             </div>
 
@@ -175,7 +175,7 @@ export const InfoPages: React.FC<InfoPagesProps> = ({ page, onBack, onOpenTrade 
             <div className="p-4 rounded-xl bg-zinc-900/80 border border-zinc-800 space-y-2">
               <h3 className="font-bold text-sm text-white">2. No Financial Advice or Predictive Signals</h3>
               <p>
-                Quantix is an execution-only broker. We do not provide trading signals, price predictions, portfolio recommendations, or financial advice. All educational and protocol information generated on the platform is purely factual and objective.
+                Verity-Capital Inv is an execution-only broker. We do not provide trading signals, price predictions, portfolio recommendations, or financial advice. All educational and protocol information generated on the platform is purely factual and objective.
               </p>
             </div>
 
@@ -201,7 +201,7 @@ export const InfoPages: React.FC<InfoPagesProps> = ({ page, onBack, onOpenTrade 
 
           <div className="space-y-4 text-xs leading-relaxed text-zinc-300">
             <p>
-              By accessing the Quantix platform, executing orders, or initiating custody transfers, you agree to these Terms of Brokerage Service.
+              By accessing the Verity-Capital Inv platform, executing orders, or initiating custody transfers, you agree to these Terms of Brokerage Service.
             </p>
             <div className="p-4 rounded-xl bg-zinc-900/80 border border-zinc-800 space-y-2">
               <h3 className="font-bold text-sm text-white">Account Eligibility & Verification</h3>
@@ -214,6 +214,72 @@ export const InfoPages: React.FC<InfoPagesProps> = ({ page, onBack, onOpenTrade 
               <p>
                 Market and limit orders are executed against deep institutional order book liquidity. Trades settle instantly in USD cash and qualified digital asset ledger balances.
               </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SECURITY & CUSTODY SPECIFICATIONS */}
+      {page === 'security' && (
+        <div id="security-specifications-container" className="bg-[#0B0F19] border border-amber-500/30 rounded-2xl p-8 shadow-2xl space-y-6 text-zinc-300">
+          <div className="pb-4 border-b border-zinc-800 flex items-center justify-between">
+            <div>
+              <div className="flex items-center space-x-2 text-amber-500 font-mono text-xs font-semibold uppercase tracking-wider mb-1">
+                <ShieldCheck className="w-4 h-4" />
+                <span>Cold Custody Infrastructure</span>
+              </div>
+              <h1 className="text-2xl font-bold text-white tracking-tight">Verity-Capital Inv Security Architecture</h1>
+            </div>
+            <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+              SOC 2 Type II Audited
+            </span>
+          </div>
+
+          <div className="space-y-4 text-xs leading-relaxed text-zinc-300">
+            <p>
+              At Verity-Capital Inv, institutional security is foundational. Our digital asset infrastructure is architected to eliminate single points of failure across key generation, storage, and transaction signing.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+              <div className="p-4 rounded-xl bg-zinc-900/90 border border-zinc-800 space-y-2">
+                <h3 className="font-bold text-sm text-white flex items-center space-x-2">
+                  <Lock className="w-4 h-4 text-amber-400" />
+                  <span>Air-Gapped Cold Storage</span>
+                </h3>
+                <p className="text-zinc-400 text-xs">
+                  98%+ of client digital assets are retained in segregated, multi-signatory cold storage vaults situated in deep physical vaults with 24/7 biometric controls.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-zinc-900/90 border border-zinc-800 space-y-2">
+                <h3 className="font-bold text-sm text-white flex items-center space-x-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                  <span>Multi-Party Computation (MPC)</span>
+                </h3>
+                <p className="text-zinc-400 text-xs">
+                  Cryptographic private keys are divided into encrypted key shards across independent geographical jurisdictions. Keys are never assembled in a single memory location.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-zinc-900/90 border border-zinc-800 space-y-2">
+                <h3 className="font-bold text-sm text-white flex items-center space-x-2">
+                  <CheckCircle2 className="w-4 h-4 text-amber-400" />
+                  <span>Whitelisted Settlement Channels</span>
+                </h3>
+                <p className="text-zinc-400 text-xs">
+                  Outbound cryptocurrency withdrawals and fiat settlements are strictly restricted to pre-authorized, whitelisted recipient addresses with mandatory cooling-off intervals.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-zinc-900/90 border border-zinc-800 space-y-2">
+                <h3 className="font-bold text-sm text-white flex items-center space-x-2">
+                  <FileText className="w-4 h-4 text-indigo-400" />
+                  <span>Continuous Auditing & Proof of Reserves</span>
+                </h3>
+                <p className="text-zinc-400 text-xs">
+                  Our qualified custodian partners undergo continuous third-party financial audits and cryptographic Merkle tree Proof of Reserves attestations.
+                </p>
+              </div>
             </div>
           </div>
         </div>

@@ -186,7 +186,7 @@ export const AssetSpecsModal: React.FC<AssetSpecsModalProps> = ({
 
               {/* Compliance Notice */}
               <div className="p-3 rounded-xl bg-zinc-900/40 border border-zinc-800/80 text-[11px] text-zinc-400 leading-relaxed">
-                <strong>Quantix Brokerage Compliance Notice:</strong> Specifications are provided for informational and protocol validation purposes in accordance with US regulatory standards. Quantix does not endorse or offer investment advice regarding any listed digital asset.
+                <strong>Verity-Capital Inv Brokerage Compliance Notice:</strong> Specifications are provided for informational and protocol validation purposes in accordance with US regulatory standards. Verity-Capital Inv does not endorse or offer investment advice regarding any listed digital asset.
               </div>
             </div>
           ) : (

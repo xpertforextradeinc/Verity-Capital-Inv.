@@ -134,7 +134,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </button>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mt-2">
-            Quantix Prime Custody & Spot Dashboard
+            Verity-Capital Inv Prime Custody & Spot Dashboard
           </h1>
           <p className="text-xs text-zinc-400 mt-1 max-w-xl">
             Regulated US digital asset brokerage environment. Manage cash liquidity, cold-storage custody, and execute spot instructions across BTC, ETH, SOL, XRP, and ADA.

@@ -24,7 +24,7 @@ export function calcOrderTotal(quantity: number, price: number): number {
 }
 
 // In-Memory Database State
-class QuantixDatabase {
+class VerityDatabase {
   users: Map<string, User> = new Map();
   passwords: Map<string, string> = new Map(); // In a full prod DB, argon2/bcrypt hash
   portfolios: Map<string, Portfolio> = new Map();
@@ -63,8 +63,8 @@ class QuantixDatabase {
     };
 
     const adminUser: User = {
-      id: 'usr_admin_quantix',
-      email: 'admin@quantixexchange.com',
+      id: 'usr_admin_verity_capital_inv',
+      email: 'admin@verity-capital.com',
       firstName: 'System',
       lastName: 'Administrator',
       role: 'ADMIN',
@@ -405,10 +405,10 @@ class QuantixDatabase {
       riskLevel: 'MODERATE',
       confidenceScore: 99,
       modelName: 'gemini-3.8-flash',
-      promptVersion: 'quantix_factual_crypto_v2.0',
+      promptVersion: 'verity_capital_inv_factual_crypto_v2.0',
       generatedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
       expiresAt: new Date(Date.now() + 3600000 * 72).toISOString(),
-      disclaimer: 'FOR FACTUAL & EDUCATIONAL PURPOSES ONLY. Quantix provides strictly compliant, non-advisory asset information. We do not provide trading signals, price predictions, or investment advice.'
+      disclaimer: 'FOR FACTUAL & EDUCATIONAL PURPOSES ONLY. Verity-Capital Inv provides strictly compliant, non-advisory asset information. We do not provide trading signals, price predictions, or investment advice.'
     };
 
     const ethInsight: AiInsight = {
@@ -426,10 +426,10 @@ class QuantixDatabase {
       riskLevel: 'MODERATE',
       confidenceScore: 99,
       modelName: 'gemini-3.8-flash',
-      promptVersion: 'quantix_factual_crypto_v2.0',
+      promptVersion: 'verity_capital_inv_factual_crypto_v2.0',
       generatedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
       expiresAt: new Date(Date.now() + 3600000 * 72).toISOString(),
-      disclaimer: 'FOR FACTUAL & EDUCATIONAL PURPOSES ONLY. Quantix provides strictly compliant, non-advisory asset information. We do not provide trading signals, price predictions, or investment advice.'
+      disclaimer: 'FOR FACTUAL & EDUCATIONAL PURPOSES ONLY. Verity-Capital Inv provides strictly compliant, non-advisory asset information. We do not provide trading signals, price predictions, or investment advice.'
     };
 
     this.insights.set('inst_btc', btcInsight);
@@ -523,7 +523,7 @@ class QuantixDatabase {
         actorEmail: adminUser.email,
         eventType: 'SYSTEM_STARTUP',
         targetType: 'SYSTEM',
-        targetId: 'quantix_engine',
+        targetId: 'verity_capital_inv_engine',
         metadataJson: { version: '1.0.0-beta', environment: 'production-vps-ready' },
         ipHash: '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08',
         createdAt: new Date(Date.now() - 86400000 * 4).toISOString(),
@@ -536,7 +536,7 @@ class QuantixDatabase {
         id: 'notif_1',
         userId: customerUser.id,
         type: 'SYSTEM',
-        title: 'Welcome to Quantix Exchange',
+        title: 'Welcome to Verity-Capital Inv',
         body: 'Your paper trading account has been provisioned with $100,000 in simulated USD capital.',
         readAt: null,
         createdAt: new Date(Date.now() - 86400000 * 4).toISOString(),
@@ -831,12 +831,12 @@ class QuantixDatabase {
       totalOrdersCount: this.orders.size,
       simulatedFeedStatus: this.feedRunning ? 'RUNNING' : 'PAUSED',
       lastTickTimestamp: new Date().toISOString(),
-      version: '1.0.0-quantix-mvp',
+      version: '1.0.0-verity_capital_inv-mvp',
     };
   }
 
   // Admin Capital Adjustment: Credit or debit simulated cash
-  public adjustUserBalance(userId: string, deltaAmount: number, reason: string, adminEmail: string = 'admin@quantixexchange.com'): { success: boolean; newBalance: number } | null {
+  public adjustUserBalance(userId: string, deltaAmount: number, reason: string, adminEmail: string = 'admin@verity-capital.com'): { success: boolean; newBalance: number } | null {
     const portfolio = this.portfolios.get(userId);
     if (!portfolio) return null;
 
@@ -845,7 +845,7 @@ class QuantixDatabase {
     portfolio.updatedAt = new Date().toISOString();
 
     this.logAuditEvent({
-      actorUserId: 'usr_admin_quantix',
+      actorUserId: 'usr_admin_verity_capital_inv',
       actorEmail: adminEmail,
       eventType: 'ADMIN_BALANCE_ADJUSTMENT',
       targetType: 'USER',
@@ -868,7 +868,7 @@ class QuantixDatabase {
   }
 
   // Admin Order Action: Force execute or cancel
-  public forceCancelOrder(orderId: string, reason: string, adminEmail: string = 'admin@quantixexchange.com'): Order | null {
+  public forceCancelOrder(orderId: string, reason: string, adminEmail: string = 'admin@verity-capital.com'): Order | null {
     const order = this.orders.get(orderId);
     if (!order) return null;
 
@@ -877,7 +877,7 @@ class QuantixDatabase {
     order.executedAt = new Date().toISOString();
 
     this.logAuditEvent({
-      actorUserId: 'usr_admin_quantix',
+      actorUserId: 'usr_admin_verity_capital_inv',
       actorEmail: adminEmail,
       eventType: 'ADMIN_ORDER_CANCEL',
       targetType: 'ORDER',
@@ -889,7 +889,7 @@ class QuantixDatabase {
     return order;
   }
 
-  public forceExecuteOrder(orderId: string, adminEmail: string = 'admin@quantixexchange.com'): Order | null {
+  public forceExecuteOrder(orderId: string, adminEmail: string = 'admin@verity-capital.com'): Order | null {
     const order = this.orders.get(orderId);
     if (!order) return null;
     const inst = this.instruments.get(order.instrumentId);
@@ -898,7 +898,7 @@ class QuantixDatabase {
     this.executePendingOrder(order, inst.price);
 
     this.logAuditEvent({
-      actorUserId: 'usr_admin_quantix',
+      actorUserId: 'usr_admin_verity_capital_inv',
       actorEmail: adminEmail,
       eventType: 'ADMIN_FORCE_EXECUTE_ORDER',
       targetType: 'ORDER',
@@ -945,8 +945,8 @@ class QuantixDatabase {
     this.instruments.set(id, inst);
 
     this.logAuditEvent({
-      actorUserId: 'usr_admin_quantix',
-      actorEmail: 'admin@quantixexchange.com',
+      actorUserId: 'usr_admin_verity_capital_inv',
+      actorEmail: 'admin@verity-capital.com',
       eventType: 'ADMIN_INSTRUMENT_CREATE',
       targetType: 'INSTRUMENT',
       targetId: id,
@@ -977,8 +977,8 @@ class QuantixDatabase {
     this.recalculateAllPortfolios();
 
     this.logAuditEvent({
-      actorUserId: 'usr_admin_quantix',
-      actorEmail: 'admin@quantixexchange.com',
+      actorUserId: 'usr_admin_verity_capital_inv',
+      actorEmail: 'admin@verity-capital.com',
       eventType: 'ADMIN_PRICE_OVERRIDE',
       targetType: 'INSTRUMENT',
       targetId: instrumentId,
@@ -997,11 +997,11 @@ class QuantixDatabase {
     });
 
     this.logAuditEvent({
-      actorUserId: 'usr_admin_quantix',
-      actorEmail: 'admin@quantixexchange.com',
+      actorUserId: 'usr_admin_verity_capital_inv',
+      actorEmail: 'admin@verity-capital.com',
       eventType: haltAll ? 'CIRCUIT_BREAKER_GLOBAL_HALT' : 'CIRCUIT_BREAKER_GLOBAL_RESUME',
       targetType: 'SYSTEM',
-      targetId: 'quantix_matching_engine',
+      targetId: 'verity_capital_inv_matching_engine',
       metadataJson: { haltAll },
       ipHash: '127.0.0.1_admin',
     });
@@ -1036,8 +1036,8 @@ class QuantixDatabase {
     this.recalculateAllPortfolios();
 
     this.logAuditEvent({
-      actorUserId: 'usr_admin_quantix',
-      actorEmail: 'admin@quantixexchange.com',
+      actorUserId: 'usr_admin_verity_capital_inv',
+      actorEmail: 'admin@verity-capital.com',
       eventType: 'ADMIN_MARKET_SHOCK_SIMULATION',
       targetType: 'MARKET',
       targetId: 'global_simulated_catalog',
@@ -1112,7 +1112,7 @@ class QuantixDatabase {
 
     this.logAuditEvent({
       actorUserId: userId,
-      actorEmail: this.users.get(userId)?.email || 'user@quantix',
+      actorEmail: this.users.get(userId)?.email || 'user@verity_capital_inv',
       eventType: `TRANSFER_${data.type}`,
       targetType: 'CUSTODY_TRANSFER',
       targetId: id,
@@ -1156,7 +1156,7 @@ class QuantixDatabase {
 
     this.logAuditEvent({
       actorUserId: userId,
-      actorEmail: this.users.get(userId)?.email || 'user@quantix',
+      actorEmail: this.users.get(userId)?.email || 'user@verity_capital_inv',
       eventType: 'KYC_PROFILE_UPDATE',
       targetType: 'COMPLIANCE',
       targetId: userId,
@@ -1168,4 +1168,4 @@ class QuantixDatabase {
   }
 }
 
-export const db = new QuantixDatabase();
+export const db = new VerityDatabase();

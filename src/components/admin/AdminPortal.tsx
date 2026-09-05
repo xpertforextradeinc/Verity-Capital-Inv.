@@ -318,7 +318,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToCustomer }) =>
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `quantix_audit_ledger_${Date.now()}.csv`);
+    link.setAttribute('download', `verity_capital_inv_audit_ledger_${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -410,11 +410,11 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToCustomer }) =>
                 <span>Firestore Cloud Sync Active</span>
               </span>
               <span className="text-[11px] font-mono text-cyan-300 bg-cyan-950/40 border border-cyan-800/40 px-2 py-0.5 rounded-md">
-                DB ID: {health ? health.version : 'Quantix Core'}
+                DB ID: {health ? health.version : 'Verity-Capital Inv Core'}
               </span>
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-white mt-1.5 flex items-center space-x-2">
-              <span>Quantix Super-Admin Control & Oversight Suite</span>
+              <span>Verity-Capital Inv Super-Admin Control & Oversight Suite</span>
             </h1>
             <p className="text-xs text-zinc-300 mt-1 max-w-2xl">
               Simulated brokerage oversight: inspect active portfolios, grant or adjust paper trading balances, control market circuit breakers, test liquidity shocks, and audit cryptographic transaction logs.
@@ -1112,7 +1112,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToCustomer }) =>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
               <div className="bg-zinc-900/70 border border-zinc-800 rounded-xl p-4">
                 <span className="text-zinc-400 text-[11px]">System Prompt Version</span>
-                <div className="font-mono font-bold text-white text-sm mt-1">quantix_market_educational_v1.4</div>
+                <div className="font-mono font-bold text-white text-sm mt-1">verity_capital_inv_market_educational_v1.4</div>
                 <p className="text-[11px] text-emerald-400 mt-2 flex items-center space-x-1">
                   <CheckCircle className="w-3.5 h-3.5" />
                   <span>Mandatory disclaimers enforced</span>
@@ -1140,7 +1140,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ onBackToCustomer }) =>
             <div className="mt-5 p-4 rounded-xl bg-amber-950/20 border border-amber-800/40 text-xs">
               <span className="font-bold text-amber-300 block mb-1">Standardized Regulatory Disclaimer Requirement:</span>
               <p className="text-amber-200/80 text-[11px] leading-relaxed">
-                "FOR EDUCATIONAL PAPER-TRADING PURPOSES ONLY. This insight does not constitute financial, investment, legal, or tax advice. Quantix Exchange is a simulated platform with no real securities or funds."
+                "FOR EDUCATIONAL PAPER-TRADING PURPOSES ONLY. This insight does not constitute financial, investment, legal, or tax advice. Verity-Capital Inv is a simulated platform with no real securities or funds."
               </p>
             </div>
           </div>

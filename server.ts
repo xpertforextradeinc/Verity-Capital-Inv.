@@ -1,8 +1,10 @@
 import express, { Request, Response, NextFunction } from 'express';
 import path from 'path';
+import multer from 'multer';
+import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
 import { db, roundDecimal, calcOrderTotal } from './server/db.ts';
-import { generateEducationalMarketInsight } from './server/ai.ts';
+import { generateEducationalMarketInsight, executeVerityBrokerChat } from './server/ai.ts';
 import { User, Order, Watchlist, TransferRecord, KycProfile, FactualCryptoAsset } from './src/types.ts';
 
 const app = express();
@@ -29,7 +31,7 @@ function getCurrentUser(req: Request): User | null {
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.split(' ')[1];
     if (token === 'admin_token') {
-      return db.users.get('usr_admin_quantix') || null;
+      return db.users.get('usr_admin_verity_capital_inv') || null;
     }
     if (token.startsWith('user_')) {
       const userId = token.replace('user_', '');
@@ -55,8 +57,12 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
   const user = getCurrentUser(req);
   if (!user || user.role !== 'ADMIN') {
-    return res.status(403).json({ error: 'Administrator access required' });
+    const attemptUser = user ? user.id : 'unauthenticated_user';
+    console.warn(`[COMPLIANCE ALERT] Unauthorized admin access attempt from ${attemptUser} to endpoint: ${req.url}`);
+    return res.status(403).json({ error: 'Access Restricted - Verity-Capital Inv Security' });
   }
+  
+  console.log(`[COMPLIANCE AUDIT] Admin role verified for operator: ${user.id}. Accessing: ${req.url}`);
   (req as any).user = user;
   next();
 }
@@ -266,7 +272,7 @@ app.post('/api/v1/auth/switch-demo', (req: Request, res: Response) => {
   const { role } = req.body;
   let targetUser: User | undefined;
   if (role === 'ADMIN') {
-    targetUser = db.users.get('usr_admin_quantix');
+    targetUser = db.users.get('usr_admin_verity_capital_inv');
   } else {
     targetUser = db.users.get('usr_customer_alex');
   }
@@ -569,6 +575,39 @@ app.post('/api/v1/insights/generate', async (req: Request, res: Response) => {
     res.json(insight);
   } catch (err: any) {
     res.status(500).json({ error: 'Unable to generate market insight at this moment' });
+  }
+});
+
+// Interactive Verity-Capital Inv Broker Chat (Compliant Institutional Concierge)
+app.post('/api/v1/broker-chat', async (req: Request, res: Response) => {
+  const { message, portfolioContext, kycTier } = req.body;
+  if (!message || typeof message !== 'string') {
+    return res.status(400).json({ error: 'Message is required' });
+  }
+
+  try {
+    const result = await executeVerityBrokerChat({
+      message,
+      portfolioContext,
+      kycTier,
+    });
+
+    db.logAuditEvent({
+      actorUserId: getCurrentUser(req)?.id || 'anonymous',
+      actorEmail: getCurrentUser(req)?.email || 'anonymous',
+      eventType: 'BROKER_CHAT_INTERACTION',
+      targetType: 'SYSTEM',
+      targetId: 'verity_broker_desk',
+      metadataJson: { queryLength: message.length, hasAction: !!result.suggestedAction },
+      ipHash: req.ip ? String(req.ip) : 'unknown',
+    });
+
+    res.json(result);
+  } catch (err: any) {
+    console.error('Broker chat error:', err);
+    res.status(500).json({
+      reply: 'The Verity-Capital Inv Institutional Brokerage Desk is currently undergoing scheduled maintenance. Please try again shortly.',
+    });
   }
 });
 
@@ -955,7 +994,7 @@ async function startServer() {
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`[Quantix Exchange] Server running on http://0.0.0.0:${PORT}`);
+    console.log(`[Verity-Capital Inv Exchange] Server running on http://0.0.0.0:${PORT}`);
   });
 }
 

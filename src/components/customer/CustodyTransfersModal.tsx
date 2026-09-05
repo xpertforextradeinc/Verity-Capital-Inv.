@@ -237,9 +237,9 @@ export const CustodyTransfersModal: React.FC<CustodyTransfersModalProps> = ({
                 <div className="p-3 rounded-lg bg-black/60 font-mono text-amber-300 break-all text-[11px] border border-zinc-800">
                   {selectedAsset === 'BTC' && 'bc1q9u4z4m6d2q3k7a2yv90w5q8x1m9j0z789institutional'}
                   {selectedAsset === 'ETH' && '0x71C40274290b79A0BeB0C681A2042398379c0B9e'}
-                  {selectedAsset === 'SOL' && 'QuantixSOLVault928374829104829472910293847291'}
-                  {selectedAsset === 'XRP' && 'rQuantixUSDSettlementVault9284729104 (Tag: 104829)'}
-                  {selectedAsset === 'ADA' && 'addr1q9quantixinstitutionalcoldvault92837492019482'}
+                  {selectedAsset === 'SOL' && 'VerityCapitalInvSOLVault928374829104829472910293847291'}
+                  {selectedAsset === 'XRP' && 'rVerityCapitalInvUSDSettlementVault9284729104 (Tag: 104829)'}
+                  {selectedAsset === 'ADA' && 'addr1q9verity_capital_invinstitutionalcoldvault92837492019482'}
                 </div>
                 <p className="text-[11px] text-zinc-400">
                   Deposits are credited after 3 network confirmations. Client funds are immediately moved into air-gapped cold storage.
