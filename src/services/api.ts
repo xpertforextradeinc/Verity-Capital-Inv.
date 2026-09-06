@@ -14,7 +14,8 @@ import {
   TransferRecord,
   KycProfile,
   FactualCryptoAsset,
-  BrokerChatResponse
+  BrokerChatResponse,
+  InvestmentPlan
 } from '../types.ts';
 
 const API_BASE = '/api/v1';
@@ -242,6 +243,34 @@ class ApiService {
   // Activity
   async getActivity(): Promise<AuditEvent[]> {
     return this.request<AuditEvent[]>('/activity');
+  }
+
+  // Settings
+  async getWhatsAppNumber(): Promise<string> {
+    const data = await this.request<{ whatsappNumber: string }>('/settings/whatsapp');
+    return data.whatsappNumber;
+  }
+
+  async updateWhatsAppNumber(whatsappNumber: string): Promise<string> {
+    const data = await this.request<{ whatsappNumber: string }>('/admin/settings/whatsapp', {
+      method: 'POST',
+      body: JSON.stringify({ whatsappNumber }),
+    });
+    return data.whatsappNumber;
+  }
+
+  // Investment Plans
+  async getInvestmentPlans(): Promise<InvestmentPlan[]> {
+    const data = await this.request<{ plans: InvestmentPlan[] }>('/plans');
+    return data.plans;
+  }
+
+  async adminUpdateInvestmentPlan(plan: InvestmentPlan): Promise<InvestmentPlan> {
+    const data = await this.request<{ success: boolean; plan: InvestmentPlan }>('/admin/plans', {
+      method: 'POST',
+      body: JSON.stringify(plan),
+    });
+    return data.plan;
   }
 
   // Admin

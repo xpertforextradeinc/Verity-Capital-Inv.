@@ -10,7 +10,8 @@ import {
   AppNotification,
   SystemHealth,
   TransferRecord,
-  KycProfile
+  KycProfile,
+  InvestmentPlan
 } from '../src/types.ts';
 
 // Decimal-safe arithmetic helpers to avoid JS floating point errors
@@ -40,10 +41,89 @@ class VerityDatabase {
   systemStartTime: number = Date.now();
   feedInterval: NodeJS.Timeout | null = null;
   feedRunning: boolean = true;
+  whatsappNumber: string = '+1234567890';
+  investmentPlans: InvestmentPlan[] = [
+    {
+      id: 'starter',
+      name: 'Starter Plan',
+      amount: 1000,
+      features: ['Access to standard markets', 'Basic portfolio reporting', 'Email support', 'Standard execution'],
+      recommended: false,
+      display_order: 1,
+    },
+    {
+      id: 'silver',
+      name: 'Silver Plan',
+      amount: 5000,
+      features: ['Advanced market access', 'Daily market insights', 'Priority email support', 'Fast execution'],
+      recommended: false,
+      display_order: 2,
+    },
+    {
+      id: 'gold',
+      name: 'Gold Plan',
+      amount: 10000,
+      features: ['Global OTC access', 'Dedicated account manager', '24/7 priority support', 'Institutional execution'],
+      recommended: true,
+      display_order: 3,
+    },
+    {
+      id: 'vip',
+      name: 'VIP Plan',
+      amount: 25000,
+      features: ['Exclusive block trades', 'Private custody solutions', 'Direct broker line', 'Zero-latency execution'],
+      recommended: false,
+      display_order: 4,
+    },
+  ];
 
   constructor() {
     this.seedInitialData();
     this.startSimulatedPriceFeed();
+    this.startCoinGeckoFeed();
+  }
+
+  private startCoinGeckoFeed() {
+    const fetchCoinGecko = async () => {
+      try {
+        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,ripple,cardano&vs_currencies=usd&include_24hr_change=true');
+        if (response.ok) {
+          const data = await response.json();
+          const mapping: Record<string, string> = {
+            bitcoin: 'inst_btc',
+            ethereum: 'inst_eth',
+            solana: 'inst_sol',
+            ripple: 'inst_xrp',
+            cardano: 'inst_ada'
+          };
+          for (const [cgId, instId] of Object.entries(mapping)) {
+            if (data[cgId] && data[cgId].usd) {
+               const inst = this.instruments.get(instId);
+               if (inst) {
+                  inst.price = data[cgId].usd;
+                  inst.changePercent = data[cgId].usd_24h_change || inst.changePercent;
+                  inst.changeAmount = roundDecimal(inst.price - (inst.price / (1 + inst.changePercent / 100)), 4);
+                  inst.dataSource = 'COINGECKO_API';
+                  
+                  if (inst.price > inst.high24h) inst.high24h = inst.price;
+                  if (inst.price < inst.low24h) inst.low24h = inst.price;
+                  
+                  inst.sparkline.push(inst.price);
+                  if (inst.sparkline.length > 25) inst.sparkline.shift();
+                  inst.updatedAt = new Date().toISOString();
+               }
+            }
+          }
+          this.recalculateAllPortfolios();
+        }
+      } catch (err) {
+        console.error('CoinGecko fetch failed:', err);
+      }
+    };
+
+    fetchCoinGecko();
+    // Poll every 30 seconds to avoid strict rate limits
+    setInterval(fetchCoinGecko, 30000);
   }
 
   private seedInitialData() {
@@ -578,6 +658,7 @@ class VerityDatabase {
 
       this.instruments.forEach((instrument) => {
         if (instrument.status === 'HALTED') return;
+        if (instrument.dataSource === 'COINGECKO_API') return; // Let CoinGecko handle these
 
         // Brownian motion: delta -0.3% to +0.3%
         const volatility = instrument.assetType === 'CRYPTO' ? 0.0035 : 0.0018;

@@ -125,8 +125,8 @@ alter table public.positions enable row level security;
 alter table public.orders enable row level security;
 alter table public.instruments enable row level security;
 
+-- Regular users have strictly read-only access to their own account data
 create policy "users read own profile" on public.profiles for select using (auth.uid() = id);
-create policy "users update own profile" on public.profiles for update using (auth.uid() = id);
 create policy "users read own portfolios" on public.portfolios for select using (auth.uid() = user_id);
 create policy "users read own balances" on public.portfolio_balances for select using (
   exists (select 1 from public.portfolios p where p.id = portfolio_id and p.user_id = auth.uid())
@@ -135,12 +135,18 @@ create policy "users read own positions" on public.positions for select using (
   exists (select 1 from public.portfolios p where p.id = portfolio_id and p.user_id = auth.uid())
 );
 create policy "users read own orders" on public.orders for select using (auth.uid() = user_id);
-create policy "users create own orders" on public.orders for insert with check (auth.uid() = user_id);
 create policy "authenticated users read instruments" on public.instruments for select using (auth.role() = 'authenticated');
 
 create or replace function public.is_admin()
 returns boolean language sql stable security definer set search_path = public as $$
-  select exists (select 1 from public.profiles where id = auth.uid() and role = 'ADMIN' and status = 'ACTIVE');
+  select coalesce((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin', false)
+      or coalesce((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin', false)
+      or exists (
+        select 1 from public.profiles
+        where id = auth.uid()
+          and upper(role::text) = 'ADMIN'
+          and upper(coalesce(status::text, 'ACTIVE')) = 'ACTIVE'
+      );
 $$;
 
 create policy "admins manage profiles" on public.profiles for all using (public.is_admin()) with check (public.is_admin());

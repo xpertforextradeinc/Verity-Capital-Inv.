@@ -257,6 +257,15 @@ export interface BrokerChatResponse {
   };
 }
 
+export interface InvestmentPlan {
+  id: string;
+  name: string;
+  amount: number;
+  features: string[];
+  recommended?: boolean;
+  display_order?: number;
+}
+
 declare global {
   namespace JSX {
     interface IntrinsicElements {

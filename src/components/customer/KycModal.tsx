@@ -6,7 +6,9 @@ import { api } from '../../services/api.ts';
 interface KycModalProps {
   isOpen: boolean;
   onClose: () => void;
+  user?: any;
   onProfileUpdated?: () => void;
+  onCompleteKyc?: () => void;
 }
 
 export const KycModal: React.FC<KycModalProps> = ({

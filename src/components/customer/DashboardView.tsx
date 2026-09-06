@@ -38,11 +38,14 @@ interface DashboardViewProps {
   positions: Position[];
   orders: Order[];
   instruments: Instrument[];
-  insights: AiInsight[];
-  onOpenTrade: (instrument?: Instrument) => void;
-  onSelectInstrument: (instrument: Instrument) => void;
+  insights?: AiInsight[];
+  onOpenTrade: (instrument?: any) => void;
+  onSelectInstrument?: (instrument: Instrument) => void;
   onNavigateTab: (tab: string) => void;
-  onResetPortfolio: () => void;
+  onResetPortfolio?: () => void;
+  onOpenCustody?: () => void;
+  onOpenSpecs?: (sym?: string) => void;
+  onKycOpen?: () => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({

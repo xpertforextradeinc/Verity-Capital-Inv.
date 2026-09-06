@@ -7,7 +7,8 @@ interface CustodyTransfersModalProps {
   isOpen: boolean;
   onClose: () => void;
   portfolio: Portfolio | null;
-  onTransferCompleted: () => void;
+  onTransferCompleted?: () => void;
+  onTransferSuccess?: () => void;
 }
 
 export const CustodyTransfersModal: React.FC<CustodyTransfersModalProps> = ({

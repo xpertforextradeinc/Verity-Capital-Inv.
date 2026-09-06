@@ -19,9 +19,10 @@ interface PortfolioViewProps {
   portfolio: Portfolio | null;
   positions: Position[];
   instruments: Instrument[];
-  onOpenTrade: (instrument?: Instrument) => void;
-  onResetPortfolio: () => void;
-  onNavigateTab: (tab: string) => void;
+  onOpenTrade: (instrument?: any) => void;
+  onResetPortfolio?: () => void;
+  onNavigateTab?: (tab: string) => void;
+  onOpenCustody?: () => void;
 }
 
 export const PortfolioView: React.FC<PortfolioViewProps> = ({

@@ -19,6 +19,7 @@ import { TickerBar } from './components/common/TickerBar.tsx';
 import { PublicLayout } from './components/layout/PublicLayout.tsx';
 import { InstitutionalLayout } from './components/layout/InstitutionalLayout.tsx';
 import { LandingPage } from './components/public/LandingPage.tsx';
+import { InvestmentPlans } from './components/public/InvestmentPlans.tsx';
 import { InstitutionalAccess } from './components/public/InstitutionalAccess.tsx';
 import { InfoPages } from './components/public/InfoPages.tsx';
 import { DashboardView } from './components/customer/DashboardView.tsx';
@@ -38,7 +39,8 @@ import { CustodyTransfersModal } from './components/customer/CustodyTransfersMod
 import { AssetSpecsModal } from './components/customer/AssetSpecsModal.tsx';
 import { KycModal } from './components/customer/KycModal.tsx';
 import { AuthModal } from './components/auth/AuthModal.tsx';
-import { ShieldAlert, TrendingUp, Info } from 'lucide-react';
+import { TestimonialPopup } from './components/common/TestimonialPopup.tsx';
+import { ShieldAlert, TrendingUp, Info, AlertTriangle } from 'lucide-react';
 import { hasSupabaseClient, signInWithGoogleSupabase, signInWithSupabase, signUpWithSupabase, supabase } from './services/supabase.ts';
 
 export default function App() {
@@ -200,6 +202,10 @@ export default function App() {
   const handleOpenTrade = (
     instOrDraft?: Instrument | { symbol?: string; side?: OrderSide; orderType?: OrderType; quantity?: number; limitPrice?: number }
   ) => {
+    if (user?.status === 'SUSPENDED') {
+      alert('Your account has been suspended by the platform administrator. Trading operations are disabled.');
+      return;
+    }
     if (instOrDraft && 'price' in instOrDraft) {
       setTradeModalInstrument(instOrDraft);
       setTradeModalDraft(null);
@@ -356,7 +362,7 @@ export default function App() {
   };
 
 
-  const publicTabs = ['home', 'markets', 'about', 'features', 'testimonials', 'coverage', 'risk-disclosure', 'terms', 'privacy', 'security', 'login', 'onboarding', 'open-account'];
+  const publicTabs = ['home', 'markets', 'investment-plans', 'about', 'features', 'testimonials', 'coverage', 'risk-disclosure', 'terms', 'privacy', 'security', 'login', 'onboarding', 'open-account'];
   const isPublicTab = publicTabs.includes(currentTab);
   const isAdminTab = currentTab.startsWith('admin');
   const setPublicRoute = (tab: string) => {
@@ -429,6 +435,10 @@ export default function App() {
           if (error) throw error;
         }}
       />;
+    }
+
+    if (currentTab === 'investment-plans') {
+      return <InvestmentPlans onOpenAuth={(mode) => setPublicRoute(mode === 'login' ? 'login' : 'onboarding')} />;
     }
 
     if (publicTabs.includes(currentTab) && currentTab !== 'home') {
@@ -581,6 +591,15 @@ export default function App() {
           onSelectTab={navigateApp}
           onLogout={handleLogout}
         >
+          {user?.status === 'SUSPENDED' && (
+            <div className="mb-6 flex items-center gap-3 border border-rose-500/40 bg-rose-500/10 p-4 text-xs text-rose-300">
+              <AlertTriangle className="h-5 w-5 text-rose-400 flex-shrink-0" />
+              <div>
+                <p className="font-semibold text-rose-200">Account Suspended</p>
+                <p className="text-zinc-400">Your account is currently suspended by the platform administrator. Trading, transfers, and order placement are disabled.</p>
+              </div>
+            </div>
+          )}
           {renderContent()}
         </InstitutionalLayout>
   
@@ -632,6 +651,8 @@ export default function App() {
         onLogin={handleLogin}
         onRegister={handleRegister}
       />
+
+      <TestimonialPopup />
 
       {/* Footer */}
       <footer className="border-t border-zinc-800/80 bg-[#06090F] py-8 text-xs text-zinc-500">

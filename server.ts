@@ -82,6 +82,39 @@ app.get('/api/v1/health', (req: Request, res: Response) => {
   res.json(db.getSystemHealth());
 });
 
+// Settings
+app.get('/api/v1/settings/whatsapp', (req: Request, res: Response) => {
+  res.json({ whatsappNumber: db.whatsappNumber });
+});
+
+app.post('/api/v1/admin/settings/whatsapp', requireAdmin, (req: Request, res: Response) => {
+  const { whatsappNumber } = req.body;
+  if (!whatsappNumber) {
+    return res.status(400).json({ error: 'WhatsApp number is required' });
+  }
+  db.whatsappNumber = whatsappNumber;
+  res.json({ success: true, whatsappNumber: db.whatsappNumber });
+});
+
+// Investment Plans
+app.get('/api/v1/plans', (req: Request, res: Response) => {
+  res.json({ plans: db.investmentPlans });
+});
+
+app.post('/api/v1/admin/plans', requireAdmin, (req: Request, res: Response) => {
+  const plan = req.body;
+  if (!plan || !plan.id || !plan.name || typeof plan.amount !== 'number') {
+    return res.status(400).json({ error: 'Valid plan object with id, name, and amount is required' });
+  }
+  const index = db.investmentPlans.findIndex((p) => p.id === plan.id);
+  if (index >= 0) {
+    db.investmentPlans[index] = { ...db.investmentPlans[index], ...plan };
+  } else {
+    db.investmentPlans.push(plan);
+  }
+  res.json({ success: true, plan: db.investmentPlans.find((p) => p.id === plan.id) });
+});
+
 // Authentication
 app.post('/api/v1/auth/register', (req: Request, res: Response) => {
   const { email, password, firstName, lastName } = req.body;
@@ -381,6 +414,10 @@ app.get('/api/v1/orders', requireAuth, (req: Request, res: Response) => {
 
 app.post('/api/v1/orders/simulated', requireAuth, (req: Request, res: Response) => {
   const user = (req as any).user as User;
+  if (user.status === 'SUSPENDED') {
+    return res.status(403).json({ error: 'Account is suspended. Trading is restricted by supervisor.' });
+  }
+
   const { instrumentId, side, orderType, quantity, limitPrice } = req.body;
 
   if (!instrumentId || !side || !orderType || !quantity || quantity <= 0) {

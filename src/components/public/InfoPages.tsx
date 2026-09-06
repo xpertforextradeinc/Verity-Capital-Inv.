@@ -29,57 +29,57 @@ export const InfoPages: React.FC<InfoPagesProps> = ({ page, onBack, onOpenTrade 
                 <Building2 className="w-4 h-4" />
                 <span>Institutional Profile</span>
               </div>
-              <h1 className="text-2xl font-bold text-white tracking-tight">About Verity-Capital Inv Brokerage</h1>
+              <h1 className="text-2xl font-bold text-white tracking-tight">About Verity Capital</h1>
             </div>
             <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
-              US Regulated Standard
+              Institutional Standard
             </span>
           </div>
 
           <div className="space-y-4 text-sm leading-relaxed text-zinc-300">
             <p>
-              Verity-Capital Inv is America’s premier institutional digital asset brokerage platform, engineered from the ground up for high-net-worth investors, family offices, and commercial market participants who demand institutional execution standards, qualified cold-storage custody, and complete regulatory transparency.
+              Verity Capital is a premier institutional digital asset and Bitcoin investment platform, engineered for private wealth investors, family offices, and commercial market participants who demand institutional execution standards, qualified cold-storage custody, and complete operational transparency.
             </p>
             <p>
-              Unlike retail exchanges or automated algorithmic trading applications, Verity-Capital Inv operates strictly as a broker. We provide deep liquidity routing across Tier-1 OTC market makers and primary crypto order books, executing spot orders exclusively upon explicit client instruction.
+              The platform specializes in Bitcoin (BTC), Ethereum (ETH), institutional digital asset investing, portfolio growth, and wealth preservation. We provide deep liquidity routing across global OTC market makers and primary order books, executing spot positions and structured investment plans exclusively upon client instruction.
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
               <div className="p-4 rounded-xl bg-zinc-900/90 border border-zinc-800">
-                <div className="text-lg font-bold font-mono text-amber-400">5 Supported Assets</div>
+                <div className="text-lg font-bold font-mono text-amber-400">Primary Digital Assets</div>
                 <div className="text-xs font-semibold text-white mt-1">BTC, ETH, SOL, XRP, ADA</div>
-                <div className="text-[11px] text-zinc-400 mt-1">Curated spot liquidity without low-cap speculative exposure.</div>
+                <div className="text-[11px] text-zinc-400 mt-1">Curated spot liquidity with rigorous asset diligence and zero speculative noise.</div>
               </div>
               <div className="p-4 rounded-xl bg-zinc-900/90 border border-zinc-800">
-                <div className="text-lg font-bold font-mono text-emerald-400">Qualified Custody</div>
+                <div className="text-lg font-bold font-mono text-emerald-400">Qualified Cold Custody</div>
                 <div className="text-xs font-semibold text-white mt-1">Air-Gapped Multi-Sig</div>
-                <div className="text-[11px] text-zinc-400 mt-1">Institutional vaults backed by insured trust partners.</div>
+                <div className="text-[11px] text-zinc-400 mt-1">Institutional vaults engineered with multi-party cryptographic protection.</div>
               </div>
               <div className="p-4 rounded-xl bg-zinc-900/90 border border-zinc-800">
-                <div className="text-lg font-bold font-mono text-indigo-400">Sub-Millisecond</div>
-                <div className="text-xs font-semibold text-white mt-1">0.8ms Average Latency</div>
-                <div className="text-[11px] text-zinc-400 mt-1">Direct market access with minimal price slippage.</div>
+                <div className="text-lg font-bold font-mono text-indigo-400">Sub-Millisecond Execution</div>
+                <div className="text-xs font-semibold text-white mt-1">Deep OTC Liquidity</div>
+                <div className="text-[11px] text-zinc-400 mt-1">Direct access to premier global liquidity pools with minimal price impact.</div>
               </div>
             </div>
 
             <div className="p-4 rounded-xl bg-zinc-900/50 border border-zinc-800/80 mt-4 space-y-2">
-              <h3 className="font-bold text-white text-sm">Core Brokerage Principles</h3>
+              <h3 className="font-bold text-white text-sm">Core Investment Principles</h3>
               <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-zinc-400">
+                <li className="flex items-center space-x-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                  <span>Strict segregation of client fiat and digital asset balances</span>
+                </li>
                 <li className="flex items-center space-x-2">
                   <CheckCircle2 className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
                   <span>No proprietary counter-trading against client order flow</span>
                 </li>
                 <li className="flex items-center space-x-2">
                   <CheckCircle2 className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
-                  <span>No trading signals, speculation, or financial advice</span>
+                  <span>Engineered for capital preservation and long-term portfolio growth</span>
                 </li>
                 <li className="flex items-center space-x-2">
                   <CheckCircle2 className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
-                  <span>Strict US CIP, OFAC, and BSA/AML compliance</span>
-                </li>
-                <li className="flex items-center space-x-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
-                  <span>Complete segregation of client fiat and digital assets</span>
+                  <span>Comprehensive compliance verification and audit-ready reporting</span>
                 </li>
               </ul>
             </div>
@@ -228,16 +228,16 @@ export const InfoPages: React.FC<InfoPagesProps> = ({ page, onBack, onOpenTrade 
                 <ShieldCheck className="w-4 h-4" />
                 <span>Cold Custody Infrastructure</span>
               </div>
-              <h1 className="text-2xl font-bold text-white tracking-tight">Verity-Capital Inv Security Architecture</h1>
+              <h1 className="text-2xl font-bold text-white tracking-tight">Verity Capital Security Architecture</h1>
             </div>
             <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-              SOC 2 Type II Audited
+              Institutional Vault Standards
             </span>
           </div>
 
           <div className="space-y-4 text-xs leading-relaxed text-zinc-300">
             <p>
-              At Verity-Capital Inv, institutional security is foundational. Our digital asset infrastructure is architected to eliminate single points of failure across key generation, storage, and transaction signing.
+              At Verity Capital, asset security and wealth preservation are foundational. Our digital asset infrastructure is architected to eliminate single points of failure across key generation, storage, and transaction signing.
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
