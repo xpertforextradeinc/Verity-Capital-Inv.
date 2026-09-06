@@ -29,11 +29,11 @@ export const InstitutionalLayout: React.FC<InstitutionalLayoutProps> = ({
 }) => {
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const publicItems = [
+    { id: 'open-account', label: 'Open Account' },
     { id: 'about', label: 'About' },
-    { id: 'features', label: 'Our Services' },
-    { id: 'markets', label: 'Markets' },
-    { id: 'testimonials', label: 'Testimonials' },
-    { id: 'coverage', label: 'Global Coverage' },
+    { id: 'how-it-works', label: 'How it works' },
+    { id: 'risk-disclosure', label: 'Risk Management' },
+    { id: 'privacy', label: 'Privacy Policy' },
   ];
   const authenticatedItems = [
     { id: 'dashboard', label: 'Dashboard' },

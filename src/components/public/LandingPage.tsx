@@ -1,6 +1,9 @@
 import React from 'react';
 import { ArrowRight, BarChart3, Globe2, LockKeyhole, Network, Zap } from 'lucide-react';
 import { BitcoinModelViewer } from '../common/BitcoinModelViewer.tsx';
+import OrbImage from '../../assets/images/bitcoin_orb_1788676652641.jpg';
+import IceImage from '../../assets/images/bitcoin_ice_1788676669279.jpg';
+import NeonImage from '../../assets/images/bitcoin_neon_1788676683129.jpg';
 
 interface LandingPageProps {
   instruments: Array<{ symbol: string; price: number; changePercent: number }>;
@@ -48,6 +51,47 @@ export const LandingPage: React.FC<LandingPageProps> = ({ instruments, onOpenAut
     </section>
 
     <section id="features" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{services.map(([title, description, Icon]) => <div key={title} className="group border border-white/10 bg-white/[0.03] p-6 transition duration-300 hover:-translate-y-1 hover:border-cyan-300/40 hover:bg-cyan-300/[0.06] hover:shadow-[0_20px_50px_rgba(34,211,238,.08)]"><Icon className="h-6 w-6 text-cyan-300" /><h2 className="mt-6 text-lg font-semibold text-white">{title}</h2><p className="mt-3 text-sm leading-6 text-zinc-400">{description}</p></div>)}</section>
+
+    <section id="how-it-works" className="mt-16 sm:mt-24">
+      <div className="mb-10 text-center">
+        <p className="text-[10px] font-mono uppercase tracking-[0.22em] text-cyan-300">Simplified Process</p>
+        <h2 className="mt-3 text-3xl font-semibold text-white">How it works</h2>
+      </div>
+      <div className="grid gap-8 md:grid-cols-3">
+        <div className="border border-white/10 bg-white/[0.03] overflow-hidden group">
+          <div className="aspect-[4/3] w-full overflow-hidden">
+            <img src={OrbImage} alt="Step 1: Open Account" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+          </div>
+          <div className="p-6">
+            <div className="mb-3 text-[10px] font-mono text-cyan-300">01 / ONBOARDING</div>
+            <h3 className="text-lg font-semibold text-white">Open Account</h3>
+            <p className="mt-2 text-sm text-zinc-400">Complete our secure, institutionally compliant KYC/AML process and get approved for trading.</p>
+          </div>
+        </div>
+        
+        <div className="border border-white/10 bg-white/[0.03] overflow-hidden group">
+          <div className="aspect-[4/3] w-full overflow-hidden">
+            <img src={IceImage} alt="Step 2: Secure Funds" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+          </div>
+          <div className="p-6">
+            <div className="mb-3 text-[10px] font-mono text-emerald-300">02 / FUNDING</div>
+            <h3 className="text-lg font-semibold text-white">Secure Custody</h3>
+            <p className="mt-2 text-sm text-zinc-400">Transfer fiat or digital assets into our bank-grade cold storage facilities with zero counterparty risk.</p>
+          </div>
+        </div>
+        
+        <div className="border border-white/10 bg-white/[0.03] overflow-hidden group">
+          <div className="aspect-[4/3] w-full overflow-hidden">
+            <img src={NeonImage} alt="Step 3: Trade" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+          </div>
+          <div className="p-6">
+            <div className="mb-3 text-[10px] font-mono text-indigo-400">03 / EXECUTION</div>
+            <h3 className="text-lg font-semibold text-white">Execute Trades</h3>
+            <p className="mt-2 text-sm text-zinc-400">Access deep liquidity pools and execute high-volume block trades with institutional precision.</p>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <section id="markets" className="grid items-center gap-10 lg:grid-cols-[.8fr_1.2fr]"><div><p className="text-[10px] font-mono uppercase tracking-[0.22em] text-cyan-300">Live market access</p><h2 className="mt-3 text-3xl font-semibold tracking-tight text-white">A clear view of liquidity before execution.</h2><p className="mt-4 max-w-lg text-sm leading-7 text-zinc-400">Observe live BTC and ETH market conditions, level-2 depth, spreads, and execution context through the institutional terminal.</p><button onClick={() => onSelectTab('markets')} className="mt-6 flex items-center gap-2 text-sm font-semibold text-cyan-300 hover:text-cyan-200">Explore Markets <ArrowRight className="h-4 w-4" /></button></div><div className="border border-white/10 bg-[#080d1d] p-5"><div className="mb-4 flex items-center justify-between text-xs"><span className="font-mono text-zinc-400">LIVE INSTRUMENTS</span><span className="text-emerald-300">Market open</span></div><div className="space-y-2">{instruments.slice(0, 4).map((instrument) => <div key={instrument.symbol} className="grid grid-cols-3 items-center border-t border-white/5 py-3 text-sm"><span className="font-mono text-white">{instrument.symbol}</span><span className="text-right font-mono text-zinc-200">${instrument.price.toLocaleString()}</span><span className={`text-right font-mono ${instrument.changePercent >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>{instrument.changePercent >= 0 ? '+' : ''}{instrument.changePercent.toFixed(2)}%</span></div>)}</div></div></section>
 
