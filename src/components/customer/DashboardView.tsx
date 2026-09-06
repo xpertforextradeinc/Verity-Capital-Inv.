@@ -31,6 +31,7 @@ import { RiskBanner } from '../common/RiskBanner.tsx';
 import { CustodyTransfersModal } from './CustodyTransfersModal.tsx';
 import { AssetSpecsModal } from './AssetSpecsModal.tsx';
 import { KycModal } from './KycModal.tsx';
+import { BitcoinModelViewer } from '../common/BitcoinModelViewer.tsx';
 
 interface DashboardViewProps {
   portfolio: Portfolio | null;
@@ -317,6 +318,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
         {/* Right 1 Col: Supported Crypto Assets & Protocol Specs */}
         <div className="space-y-4">
+          <div className="bg-[#0B0F19] border border-zinc-800/90 rounded-2xl overflow-hidden relative p-4 shadow-lg flex flex-col items-center justify-center min-h-[220px]">
+             <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-[#0B0F19] via-transparent to-transparent z-10" />
+             <div className="absolute top-4 left-4 z-20">
+               <span className="text-[10px] font-mono uppercase tracking-widest text-amber-400">Interactive Asset</span>
+               <h3 className="text-sm font-bold text-white mt-0.5">Bitcoin (BTC)</h3>
+             </div>
+             <div className="absolute inset-0 z-0">
+               <BitcoinModelViewer autoRotate={true} />
+             </div>
+          </div>
+
           <div className="bg-[#0B0F19] border border-zinc-800/90 rounded-2xl p-4 shadow-lg">
             <div className="flex items-center justify-between pb-3 border-b border-zinc-800 mb-3">
               <span className="text-xs font-bold text-white">Supported Spot Assets</span>
