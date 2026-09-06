@@ -12,7 +12,7 @@ export const BitcoinModelViewer: React.FC<BitcoinModelViewerProps> = ({
   return (
     <div className={className}>
       <model-viewer
-        src="https://vazxmixjsiawhamofees.supabase.co/storage/v1/object/public/models/bitcoin/model.gltf"
+        src="https://raw.githubusercontent.com/webaverse/btc-coin/main/bitcoin_3d_v1_vian.glb"
         alt="A 3D model of a Bitcoin"
         auto-rotate={autoRotate ? "true" : undefined}
         camera-controls
