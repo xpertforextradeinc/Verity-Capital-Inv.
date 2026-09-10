@@ -131,7 +131,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setInfoMsg('Institutional access requires full verification.');
       }
     } catch (err: any) {
-      setErrorMsg(err.message || 'Authentication error');
+      const msg = err.message || 'Authentication error';
+      if (msg.toLowerCase().includes('weak_password') || msg.toLowerCase().includes('exposed') || msg.toLowerCase().includes('breach') || msg.toLowerCase().includes('weak') || err.code === 'weak_password') {
+        setErrorMsg('This password has been exposed in a previous data breach or is too weak. Please choose a different password.');
+      } else {
+        setErrorMsg(msg);
+      }
     } finally {
       setIsSubmitting(false);
     }

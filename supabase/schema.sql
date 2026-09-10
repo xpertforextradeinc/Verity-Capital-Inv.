@@ -139,8 +139,7 @@ create policy "authenticated users read instruments" on public.instruments for s
 
 create or replace function public.is_admin()
 returns boolean language sql stable security definer set search_path = public as $$
-  select coalesce((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin', false)
-      or coalesce((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin', false)
+  select coalesce((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin', false)
       or exists (
         select 1 from public.profiles
         where id = auth.uid()

@@ -122,8 +122,7 @@ create index if not exists balance_transactions_user_idx on public.balance_trans
 -- Helper function: Is Admin check
 create or replace function public.is_admin()
 returns boolean language sql stable security definer set search_path = public as $$
-  select coalesce((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin', false)
-      or coalesce((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin', false)
+  select coalesce((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin', false)
       or exists (
         select 1 from public.user_roles
         where user_id = auth.uid()

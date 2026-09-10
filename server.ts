@@ -273,6 +273,13 @@ app.post('/api/v1/auth/supabase-sync', async (req: Request, res: Response) => {
     db.watchlists.set(userId, []);
   }
 
+  // Ensure Admin role is carried over if set in Supabase user_metadata or app_metadata
+  const isAdmin = authData.user.app_metadata?.role === 'admin' || authData.user.user_metadata?.role === 'admin' || email.toLowerCase() === 'verifycapitalinv@gmail.com';
+  if (isAdmin && user.role !== 'ADMIN') {
+    user.role = 'ADMIN';
+    db.users.set(user.id, user);
+  }
+
   const token = user.role === 'ADMIN' ? 'admin_token' : `user_${user.id}`;
   res.json({ user, token });
 });

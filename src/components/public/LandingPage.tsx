@@ -93,10 +93,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ instruments, onOpenAut
       </div>
       <div className="grid gap-8 md:grid-cols-3">
         <div className="border border-white/10 bg-white/[0.03] overflow-hidden group rounded-lg">
-          <div className="aspect-[4/3] w-full overflow-hidden">
-            <img src={OrbImage} alt="Step 1: Open Account" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+          <div className="aspect-[4/3] w-full overflow-hidden relative [perspective:1000px]">
+            <img 
+              src={OrbImage} 
+              alt="Step 1: Open Account" 
+              className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out [transform-style:preserve-3d] group-hover:[transform:rotateX(8deg)_rotateY(-8deg)_scale(1.08)]" 
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#070b1b] via-[#070b1b]/20 to-transparent opacity-90 transition-opacity duration-700 group-hover:opacity-100" />
           </div>
-          <div className="p-6">
+          <div className="p-6 relative z-10">
             <div className="mb-3 text-[10px] font-mono text-cyan-300">01 / ONBOARDING</div>
             <h3 className="text-lg font-semibold text-white">Open Your Investor Account</h3>
             <p className="mt-2 text-sm text-zinc-400">Complete streamlined verification tailored for private investors and institutional funds with bank-grade privacy controls.</p>
@@ -104,10 +109,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ instruments, onOpenAut
         </div>
         
         <div className="border border-white/10 bg-white/[0.03] overflow-hidden group rounded-lg">
-          <div className="aspect-[4/3] w-full overflow-hidden">
-            <img src={IceImage} alt="Step 2: Secure Custody" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+          <div className="aspect-[4/3] w-full overflow-hidden relative [perspective:1000px]">
+            <img 
+              src={IceImage} 
+              alt="Step 2: Secure Custody" 
+              className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out [transform-style:preserve-3d] group-hover:[transform:rotateX(8deg)_rotateY(-8deg)_scale(1.08)]" 
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#070b1b] via-[#070b1b]/20 to-transparent opacity-90 transition-opacity duration-700 group-hover:opacity-100" />
           </div>
-          <div className="p-6">
+          <div className="p-6 relative z-10">
             <div className="mb-3 text-[10px] font-mono text-emerald-300">02 / CAPITAL ALLOCATION</div>
             <h3 className="text-lg font-semibold text-white">Deploy Capital Securely</h3>
             <p className="mt-2 text-sm text-zinc-400">Deposit fiat or digital assets directly into insured, air-gapped institutional cold storage vaults with zero counterparty compromise.</p>
@@ -115,10 +125,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ instruments, onOpenAut
         </div>
         
         <div className="border border-white/10 bg-white/[0.03] overflow-hidden group rounded-lg">
-          <div className="aspect-[4/3] w-full overflow-hidden">
-            <img src={NeonImage} alt="Step 3: Portfolio Growth" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+          <div className="aspect-[4/3] w-full overflow-hidden relative [perspective:1000px]">
+            <img 
+              src={NeonImage} 
+              alt="Step 3: Portfolio Growth" 
+              className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out [transform-style:preserve-3d] group-hover:[transform:rotateX(8deg)_rotateY(-8deg)_scale(1.08)]" 
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#070b1b] via-[#070b1b]/20 to-transparent opacity-90 transition-opacity duration-700 group-hover:opacity-100" />
           </div>
-          <div className="p-6">
+          <div className="p-6 relative z-10">
             <div className="mb-3 text-[10px] font-mono text-indigo-400">03 / WEALTH PRESERVATION</div>
             <h3 className="text-lg font-semibold text-white">Accelerate Growth</h3>
             <p className="mt-2 text-sm text-zinc-400">Select structured investment plans, capture digital asset market opportunities, and monitor portfolio performance with institutional precision.</p>
