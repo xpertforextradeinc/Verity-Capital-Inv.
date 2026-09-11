@@ -42,6 +42,7 @@ import { AuthModal } from './components/auth/AuthModal.tsx';
 import { TestimonialPopup } from './components/common/TestimonialPopup.tsx';
 import { ShieldAlert, TrendingUp, Info, AlertTriangle } from 'lucide-react';
 import { hasSupabaseClient, signInWithGoogleSupabase, signInWithSupabase, signUpWithSupabase, supabase } from './services/supabase.ts';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 export default function App() {
   // Application State
@@ -726,6 +727,7 @@ export default function App() {
           </div>
         </div>
       </footer>
+      <SpeedInsights />
     </>
   );
 }
