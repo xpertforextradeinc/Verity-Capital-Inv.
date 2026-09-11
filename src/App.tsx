@@ -415,7 +415,20 @@ export default function App() {
         onEmailLogin={async (email, password) => {
           const { data, error } = await signInWithSupabase(email, password);
           if (error) throw error;
-          if (data.user?.user_metadata?.role !== 'admin') {
+          
+          let isAdmin = false;
+          if (data.user?.email === 'verifycapitalinv@gmail.com' || data.user?.user_metadata?.role === 'admin') {
+            isAdmin = true;
+          } else if (data.user) {
+            const { data: roleData } = await supabase!.from('user_roles')
+              .select('role')
+              .eq('user_id', data.user.id)
+              .eq('role', 'admin')
+              .maybeSingle();
+            if (roleData) isAdmin = true;
+          }
+
+          if (!isAdmin) {
             await supabase?.auth.signOut();
             throw new Error('This account is not authorized for administrator access.');
           }

@@ -28,7 +28,11 @@ const services = [
 ] as const;
 
 export const LandingPage: React.FC<LandingPageProps> = ({ instruments, onOpenAuth, onSelectTab }) => (
-  <div className="space-y-24 pb-16">
+  <div className="relative space-y-24 pb-16 bg-[#030712]">
+    {/* Global HFT Grid and Glow Background */}
+    <div className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_80%_60%_at_50%_0%,#000_70%,transparent_100%)]"></div>
+    <div className="pointer-events-none absolute left-0 top-0 -z-10 h-full w-full bg-[radial-gradient(circle_1200px_at_50%_-20%,rgba(34,211,238,0.08),transparent)]"></div>
+
     <section className="relative isolate overflow-hidden border border-white/10 bg-[#070b1b] px-6 py-16 sm:px-10 lg:min-h-[650px] lg:px-20 lg:py-24">
       <div className="pointer-events-none absolute inset-0 -z-10 opacity-60 [background-image:linear-gradient(rgba(56,189,248,.07)_1px,transparent_1px),linear-gradient(90deg,rgba(56,189,248,.07)_1px,transparent_1px)] [background-size:54px_54px] [mask-image:linear-gradient(to_bottom,black,transparent)]" />
       <div className="pointer-events-none absolute -right-32 top-0 -z-10 h-[620px] w-[620px] rounded-full bg-cyan-400/10 blur-[100px]" />
@@ -182,13 +186,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ instruments, onOpenAut
       </div>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         {testimonials.map(([region, quote, author]) => (
-          <figure key={region} className="border border-white/10 bg-white/[0.03] p-5 rounded-lg">
-            <div className="flex items-center justify-between text-xs font-mono text-cyan-300">
+          <figure key={region} className="group relative border border-white/10 bg-slate-900/50 p-6 rounded-lg transition-all duration-500 hover:-translate-y-1 hover:border-cyan-400/50 hover:bg-cyan-950/20 hover:shadow-[0_0_30px_-5px_rgba(34,211,238,0.2)]">
+            <div className="flex items-center justify-between text-xs font-mono text-cyan-500 transition-colors duration-500 group-hover:text-cyan-300">
               <span>{region}</span>
               <span>INVESTOR INSIGHT</span>
             </div>
-            <blockquote className="mt-8 min-h-24 text-sm leading-6 text-zinc-200">{quote}</blockquote>
-            <figcaption className="mt-6 border-t border-white/10 pt-4 text-xs text-zinc-500">{author}</figcaption>
+            <blockquote className="mt-8 min-h-24 text-sm leading-7 text-zinc-300 transition-colors duration-500 group-hover:text-cyan-50">{quote}</blockquote>
+            <figcaption className="mt-6 border-t border-white/10 pt-4 text-[11px] uppercase tracking-wider text-zinc-500 transition-colors duration-500 group-hover:border-cyan-400/30 group-hover:text-cyan-200">{author}</figcaption>
           </figure>
         ))}
       </div>
@@ -205,8 +209,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ instruments, onOpenAut
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {['US & Americas', 'European Union', 'United Kingdom', 'Middle East', 'Africa Hub', 'Asia-Pacific'].map((region) => (
-            <div key={region} className="flex items-center gap-3 border border-white/10 bg-slate-950/40 px-4 py-4 text-sm font-medium text-white rounded">
-              <span className="h-2 w-2 rounded-full bg-cyan-300" />
+            <div key={region} className="group flex cursor-default items-center gap-4 border border-white/10 bg-slate-950/80 px-5 py-4 text-sm font-medium text-zinc-300 rounded transition-all duration-300 hover:-translate-y-1 hover:border-emerald-400/50 hover:bg-emerald-950/30 hover:text-white hover:shadow-[0_0_20px_-5px_rgba(52,211,153,0.3)]">
+              <span className="h-2 w-2 rounded-full bg-cyan-500 transition-all duration-300 group-hover:scale-150 group-hover:bg-emerald-400 group-hover:shadow-[0_0_10px_rgba(52,211,153,1)]" />
               {region}
             </div>
           ))}
