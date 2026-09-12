@@ -1,12 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Edit3, CheckCircle2, Ban, PauseCircle, PlayCircle, ShieldCheck, Award, Sparkles, Clock } from 'lucide-react';
 import { AccountStatusDropdown, AccountStatus } from './AccountStatusDropdown.tsx';
 import { VerifyToggle } from './VerifyToggle.tsx';
 import { AdminCurrency } from './EditBalanceModal.tsx';
+import { ClientProfileModal } from './ClientProfileModal.tsx';
 
 export interface AdminProfile {
   id: string;
   email: string;
+  firstName?: string;
+  lastName?: string;
+  dateOfBirth?: string;
   verified: boolean;
   account_status: AccountStatus;
   balances: Record<string, number>;
@@ -68,8 +72,14 @@ export const UserTable: React.FC<UserTableProps> = ({
   onPromptSuspend,
   onPromptHold,
   onPromptRemoveHold,
-}) => (
-  <div className="space-y-3">
+}) => {
+  const [selectedProfile, setSelectedProfile] = useState<AdminProfile | null>(null);
+
+  return (
+    <div className="space-y-3">
+  
+      <ClientProfileModal user={selectedProfile} onClose={() => setSelectedProfile(null)} />
+
     {/* MOBILE VIEW: Responsive Cards (<768px) */}
     <div className="space-y-3 block md:hidden">
       {users.map((user) => {
@@ -86,7 +96,7 @@ export const UserTable: React.FC<UserTableProps> = ({
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
                 <div className="font-semibold text-white text-sm truncate flex items-center space-x-1.5">
-                  <span className="truncate">{user.email}</span>
+                  <button onClick={() => setSelectedProfile(user)} className="truncate hover:text-cyan-400 hover:underline transition-colors text-left">{user.email}</button>
                   {user.isUpgraded && (
                     <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-400/20 text-amber-300 font-bold border border-amber-400/30 flex items-center space-x-0.5 shrink-0">
                       <Sparkles className="w-2.5 h-2.5" />
@@ -241,7 +251,7 @@ export const UserTable: React.FC<UserTableProps> = ({
               <tr key={user.id} className="hover:bg-cyan-300/[0.03] transition-colors">
                 <td className="px-4 py-4">
                   <div className="font-medium text-white text-sm flex items-center space-x-1.5">
-                    <span>{user.email}</span>
+                    <button onClick={() => setSelectedProfile(user)} className="hover:text-cyan-400 hover:underline transition-colors text-left">{user.email}</button>
                     {user.isUpgraded && (
                       <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-300 font-bold border border-amber-400/30 flex items-center space-x-0.5">
                         <Sparkles className="w-2.5 h-2.5" />
@@ -400,5 +410,5 @@ export const UserTable: React.FC<UserTableProps> = ({
       </div>
     )}
   </div>
-);
-
+  );
+};

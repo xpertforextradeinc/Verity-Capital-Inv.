@@ -63,9 +63,9 @@ function getCurrentUser(req: Request): User | null {
             id: portId,
             userId,
             baseCurrency: 'USD',
-            simulatedCashBalance: 100000,
+            simulatedCashBalance: 0.00,
             investedBalance: 0,
-            totalEquity: 100000,
+            totalEquity: 0.00,
             unrealizedPnl: 0,
             unrealizedPnlPercent: 0,
             dayPnl: 0,
@@ -180,15 +180,15 @@ app.post('/api/v1/auth/register', (req: Request, res: Response) => {
   db.users.set(newUser.id, newUser);
   db.passwords.set(newUser.email.toLowerCase(), password);
 
-  // Initialize Portfolio with $100,000 simulated balance
+  // Initialize Portfolio with $0.00 simulated balance
   const portId = `port_${newUserId}`;
   db.portfolios.set(newUserId, {
     id: portId,
     userId: newUserId,
     baseCurrency: 'USD',
-    simulatedCashBalance: 100000.00,
+    simulatedCashBalance: 0.00,
     investedBalance: 0,
-    totalEquity: 100000.00,
+    totalEquity: 0.00,
     unrealizedPnl: 0,
     unrealizedPnlPercent: 0,
     dayPnl: 0,
@@ -311,9 +311,9 @@ app.post('/api/v1/auth/supabase-sync', async (req: Request, res: Response) => {
       id: portfolioId,
       userId,
       baseCurrency: 'USD',
-      simulatedCashBalance: 100000,
+      simulatedCashBalance: 0.00,
       investedBalance: 0,
-      totalEquity: 100000,
+      totalEquity: 0.00,
       unrealizedPnl: 0,
       unrealizedPnlPercent: 0,
       dayPnl: 0,

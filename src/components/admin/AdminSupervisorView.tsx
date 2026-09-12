@@ -144,9 +144,12 @@ export const AdminSupervisorView: React.FC = () => {
             loadedUsers = data.map((u: any) => ({
               id: u.id,
               email: u.email,
+                firstName: u.firstName,
+                lastName: u.lastName,
+                dateOfBirth: u.dateOfBirth,
               verified: Boolean(u.verified),
               account_status: (u.account_status || 'approved').toLowerCase() as AccountStatus,
-              balances: u.balances && typeof u.balances === 'object' ? u.balances : { USD: Number(u.usd_balance || 100000) },
+              balances: u.balances && typeof u.balances === 'object' ? u.balances : { USD: Number(u.usd_balance || 0.00) },
               country: u.country || 'United States',
               created_at: u.created_at || new Date().toISOString(),
               last_sign_in: u.last_sign_in,
@@ -168,7 +171,7 @@ export const AdminSupervisorView: React.FC = () => {
                 account_status: (p.account_status || 'approved').toLowerCase() as AccountStatus,
                 balances: p.balances && typeof p.balances === 'object'
                   ? p.balances
-                  : { USD: Number(p.usd_balance || 100000), BTC: Number(p.btc_balance || 0) },
+                  : { USD: Number(p.usd_balance || 0.00), BTC: Number(p.btc_balance || 0) },
                 country: p.country || 'United States',
                 created_at: p.created_at || new Date().toISOString(),
                 last_sign_in: p.last_sign_in,
@@ -196,6 +199,9 @@ export const AdminSupervisorView: React.FC = () => {
               // Merge upgrade info into existing user
               loadedUsers[existingIndex] = {
                 ...loadedUsers[existingIndex],
+                firstName: u.firstName,
+                lastName: u.lastName,
+                dateOfBirth: u.dateOfBirth,
                 isUpgraded: Boolean(u.isUpgraded),
                 upgradeStatus: (u.upgradeStatus as any) || (u.isUpgraded ? 'UPGRADED' : 'NOT_REQUESTED'),
                 upgradeTier: u.upgradeTier,
@@ -205,10 +211,13 @@ export const AdminSupervisorView: React.FC = () => {
               loadedUsers.push({
                 id: u.id,
                 email: u.email,
+                firstName: u.firstName,
+                lastName: u.lastName,
+                dateOfBirth: u.dateOfBirth,
                 verified: true,
                 account_status: (u.status === 'SUSPENDED' ? 'suspended' : 'approved') as AccountStatus,
                 balances: {
-                  USD: u.totalEquity || u.simulatedBalance || 100000,
+                  USD: u.totalEquity || u.simulatedBalance || 0.00,
                   BTC: 1.25,
                   ETH: 15.4,
                   EUR: 0,
@@ -238,7 +247,7 @@ export const AdminSupervisorView: React.FC = () => {
             email: 'alex.morgan@example.com',
             verified: true,
             account_status: 'approved',
-            balances: { USD: 100000, BTC: 1.25, ETH: 15.4, EUR: 0, GBP: 0, NGN: 0 },
+            balances: { USD: 0.00, BTC: 1.25, ETH: 15.4, EUR: 0, GBP: 0, NGN: 0 },
             country: 'United States',
             created_at: new Date(Date.now() - 86400000 * 12).toISOString(),
             last_sign_in: new Date().toISOString(),
