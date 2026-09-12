@@ -17,6 +17,7 @@ import {
   BrokerChatResponse,
   InvestmentPlan
 } from '../types.ts';
+import { clientStorageEngine } from './clientStorage.ts';
 
 const API_BASE = '/api/v1';
 
@@ -25,7 +26,7 @@ class ApiService {
 
   constructor() {
     if (typeof window !== 'undefined') {
-      this.token = localStorage.getItem('verity_capital_inv_token') || 'user_usr_customer_alex';
+      this.token = localStorage.getItem('verity_capital_inv_token');
     }
   }
 
@@ -52,17 +53,38 @@ class ApiService {
       headers['Authorization'] = `Bearer ${this.token}`;
     }
 
-    const response = await fetch(`${API_BASE}${endpoint}`, {
-      ...options,
-      headers,
-    });
+    try {
+      const response = await fetch(`${API_BASE}${endpoint}`, {
+        ...options,
+        headers,
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP error ${response.status}`);
+      const contentType = response.headers.get('content-type') || '';
+
+      // When deployed to Vercel/static hosts without Express, any POST or GET to missing /api route
+      // returns 405 (Method Not Allowed) or 404 or text/html (Vercel SPA rewrite fallback to index.html).
+      // Seamlessly handle with clientStorageEngine!
+      if (response.status === 405 || response.status === 404 || !contentType.includes('application/json')) {
+        return await clientStorageEngine.handleRequest<T>(endpoint, options, this.token);
+      }
+
+      if (!response.ok) {
+        // If server returned 500/502/503, fallback safely
+        if (response.status >= 500) {
+          return await clientStorageEngine.handleRequest<T>(endpoint, options, this.token);
+        }
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP error ${response.status}`);
+      }
+
+      return response.json();
+    } catch (err: any) {
+      // If network offline or fetch failed (e.g. Vercel static environment or network block)
+      if (err.message && (err.message.includes('Failed to fetch') || err.message.includes('NetworkError') || err.message.includes('405'))) {
+        return await clientStorageEngine.handleRequest<T>(endpoint, options, this.token);
+      }
+      throw err;
     }
-
-    return response.json();
   }
 
   // Auth
@@ -115,9 +137,13 @@ class ApiService {
     }
   }
 
-  async getCurrentUser(): Promise<User> {
-    const data = await this.request<{ user: User }>('/auth/me');
-    return data.user;
+  async getCurrentUser(): Promise<User | null> {
+    try {
+      const data = await this.request<{ user: User }>('/auth/me');
+      return data.user;
+    } catch {
+      return null;
+    }
   }
 
   async logout(): Promise<void> {

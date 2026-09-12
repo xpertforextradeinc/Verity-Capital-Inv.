@@ -7,8 +7,6 @@ interface AdminLoginProps {
   onEmailLogin?: (email: string, password: string) => Promise<void>;
 }
 
-const ADMIN_REDIRECT = 'https://veritycapitalinv.vercel.app/admin';
-
 export const AdminLogin: React.FC<AdminLoginProps> = ({ onBack, onEmailLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,9 +15,17 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onBack, onEmailLogin }) 
 
   const signInWithGoogle = async () => {
     if (!supabase) throw new Error('Supabase authentication is not configured.');
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://veritycapitalinv.vercel.app';
+    const redirectUrl = `${origin}/admin`;
     const { error: authError } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: ADMIN_REDIRECT },
+      options: {
+        redirectTo: redirectUrl,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+      },
     });
     if (authError) throw authError;
   };

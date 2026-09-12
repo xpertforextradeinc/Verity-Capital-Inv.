@@ -5,7 +5,13 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 export const supabase = supabaseUrl && supabaseAnonKey 
-  ? createClient(supabaseUrl, supabaseAnonKey) 
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+      },
+    }) 
   : null;
 
 export const hasSupabaseClient = () => !!supabase;
@@ -33,12 +39,20 @@ export async function signUpWithSupabase(
   });
 }
 
-export async function signInWithGoogleSupabase() {
+export async function signInWithGoogleSupabase(redirectPath: string = '/dashboard') {
   if (!supabase) {
     throw new Error('Supabase authentication is not configured.');
   }
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  const redirectTo = `${origin}${redirectPath.startsWith('/') ? redirectPath : `/${redirectPath}`}`;
   return supabase.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: `${window.location.origin}/login` },
+    options: {
+      redirectTo,
+      queryParams: {
+        access_type: 'offline',
+        prompt: 'consent',
+      },
+    },
   });
 }

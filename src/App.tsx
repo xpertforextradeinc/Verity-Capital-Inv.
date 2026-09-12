@@ -132,18 +132,68 @@ export default function App() {
     id: string;
     email?: string;
     access_token?: string;
-    user_metadata?: { first_name?: string; last_name?: string; role?: string };
+    user_metadata?: {
+      first_name?: string;
+      last_name?: string;
+      role?: string;
+      full_name?: string;
+      name?: string;
+    };
   }) => {
     if (!authUser.email) throw new Error('Your Supabase account does not have an email address.');
-    setSupabaseRole(authUser.user_metadata?.role || null);
+
+    // Extract names cleanly for Google OAuth (which provides full_name / name)
+    const rawFullName = authUser.user_metadata?.full_name || authUser.user_metadata?.name || '';
+    const nameParts = rawFullName.trim().split(/\s+/);
+    const firstName = authUser.user_metadata?.first_name || nameParts[0] || 'Investor';
+    const lastName = authUser.user_metadata?.last_name || (nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'Client');
+
+    // Detect admin credentials
+    let isAdmin = authUser.email.toLowerCase() === 'verifycapitalinv@gmail.com' ||
+      authUser.user_metadata?.role === 'admin' ||
+      localStorage.getItem('supabase_user_role') === 'admin';
+
+    if (!isAdmin && hasSupabaseClient() && supabase) {
+      try {
+        const { data: roleData } = await supabase.from('user_roles')
+          .select('role')
+          .eq('user_id', authUser.id)
+          .eq('role', 'admin')
+          .maybeSingle();
+        if (roleData) isAdmin = true;
+      } catch (err) {
+        console.warn('Role lookup check error:', err);
+      }
+    }
+
+    if (isAdmin) {
+      setSupabaseRole('admin');
+      localStorage.setItem('supabase_user_role', 'admin');
+    } else {
+      setSupabaseRole(null);
+      localStorage.removeItem('supabase_user_role');
+    }
+
     const data = await api.syncSupabaseUser({
       id: authUser.id,
       email: authUser.email,
-      firstName: authUser.user_metadata?.first_name,
-      lastName: authUser.user_metadata?.last_name,
+      firstName,
+      lastName,
     }, authUser.access_token);
+
+    if (isAdmin && data.user) {
+      data.user.role = 'ADMIN';
+    }
+
     setUser(data.user);
-    setCurrentTab(data.user.role === 'ADMIN' ? 'admin-overview' : 'dashboard');
+    const destinationTab = isAdmin ? 'admin-overview' : 'dashboard';
+    const destinationRoute = isAdmin ? '/admin' : '/dashboard';
+
+    // Transition directly to the dashboard or admin portal
+    if (typeof window !== 'undefined') {
+      window.history.replaceState({}, '', destinationRoute);
+    }
+    setCurrentTab(destinationTab);
     await fetchData();
   }, [fetchData]);
 
@@ -159,8 +209,16 @@ export default function App() {
         void syncSupabaseUser({ ...data.session.user, access_token: data.session.access_token });
       }
     });
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (mounted && session?.user) void syncSupabaseUser({ ...session.user, access_token: session.access_token });
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!mounted) return;
+      if (event === 'SIGNED_OUT' || !session) {
+        setUser(null);
+        setSupabaseRole(null);
+        localStorage.removeItem('supabase_user_role');
+        api.logout();
+      } else if (session?.user) {
+        void syncSupabaseUser({ ...session.user, access_token: session.access_token });
+      }
     });
     return () => {
       mounted = false;
@@ -384,6 +442,15 @@ export default function App() {
     }
   }, [currentTab, isAdminTab, isLoading, supabaseRole]);
 
+  useEffect(() => {
+    if (user && (currentTab === 'login' || currentTab === 'onboarding' || currentTab === 'open-account' || (currentTab === 'admin-login' && user.role === 'ADMIN'))) {
+      const destination = user.role === 'ADMIN' ? 'admin-overview' : 'dashboard';
+      const route = user.role === 'ADMIN' ? '/admin' : '/dashboard';
+      window.history.replaceState({}, '', route);
+      setCurrentTab(destination);
+    }
+  }, [user, currentTab]);
+
   const renderContent = () => {
     if (isLoading) {
       return (
@@ -415,36 +482,61 @@ export default function App() {
         onEmailLogin={async (email, password) => {
           const { data, error } = await signInWithSupabase(email, password);
           if (error) throw error;
-          
+
           let isAdmin = false;
-          if (data.user?.email === 'verifycapitalinv@gmail.com' || data.user?.user_metadata?.role === 'admin') {
+          const userEmail = data.user?.email?.toLowerCase();
+          if (userEmail === 'verifycapitalinv@gmail.com' || data.user?.user_metadata?.role === 'admin') {
             isAdmin = true;
-          } else if (data.user) {
-            const { data: roleData } = await supabase!.from('user_roles')
-              .select('role')
-              .eq('user_id', data.user.id)
-              .eq('role', 'admin')
-              .maybeSingle();
-            if (roleData) isAdmin = true;
+          } else if (data.user && hasSupabaseClient() && supabase) {
+            try {
+              const { data: roleData } = await supabase.from('user_roles')
+                .select('role')
+                .eq('user_id', data.user.id)
+                .eq('role', 'admin')
+                .maybeSingle();
+              if (roleData) isAdmin = true;
+            } catch (err) {
+              console.warn('Admin check error:', err);
+            }
           }
 
           if (!isAdmin) {
             await supabase?.auth.signOut();
             throw new Error('This account is not authorized for administrator access.');
           }
+
+          localStorage.setItem('supabase_user_role', 'admin');
           if (data.user) await syncSupabaseUser({ ...data.user, access_token: data.session?.access_token });
         }}
       />;
     }
 
     if (currentTab === 'login' || currentTab === 'onboarding' || currentTab === 'open-account') {
+      if (user) {
+        if (user.role === 'ADMIN') {
+          return <AdminSupervisorView />;
+        }
+        return (
+          <DashboardView
+            portfolio={portfolio}
+            positions={positions}
+            orders={orders}
+            instruments={instruments}
+            onOpenTrade={handleOpenTrade}
+            onOpenCustody={handleOpenCustody}
+            onOpenSpecs={handleOpenSpecs}
+            onNavigateTab={setCurrentTab}
+            onKycOpen={handleOpenKyc}
+          />
+        );
+      }
       return <InstitutionalAccess
         mode={currentTab === 'login' ? 'login' : 'onboarding'}
         onBack={() => setPublicRoute('home')}
         onLogin={handleLogin}
         onRegister={handleRegister}
         onGoogleSignIn={async () => {
-          const { error } = await signInWithGoogleSupabase();
+          const { error } = await signInWithGoogleSupabase('/dashboard');
           if (error) throw error;
         }}
       />;
