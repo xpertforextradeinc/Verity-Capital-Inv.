@@ -334,6 +334,15 @@ class ApiService {
   }
 
   // Admin
+  async internalTransfer(fromWalletId: string, toWalletId: string, amount: number): Promise<Portfolio> {
+    const user = await this.getCurrentUser();
+    if (!user) throw new Error('Not authenticated');
+    
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 800));
+    return clientStorageEngine.internalTransfer(user.id, fromWalletId, toWalletId, amount);
+  }
+
   async getAdminUsers(): Promise<(User & { simulatedBalance: number; totalEquity: number })[]> {
     return this.request<(User & { simulatedBalance: number; totalEquity: number })[]>('/admin/users');
   }

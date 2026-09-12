@@ -23,6 +23,7 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
+  dateOfBirth?: string;
   role: UserRole;
   status: UserStatus;
   isUpgraded?: boolean;
@@ -96,6 +97,12 @@ export interface Portfolio {
   unrealizedPnlPercent: number;
   dayPnl: number;
   dayPnlPercent: number;
+  wallets?: {
+    id: string;
+    name: string;
+    balance: number;
+    asset: string;
+  }[];
   createdAt: string;
   updatedAt: string;
 }

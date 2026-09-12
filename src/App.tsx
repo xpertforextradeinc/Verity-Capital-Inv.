@@ -31,6 +31,7 @@ import { OrdersView } from './components/customer/OrdersView.tsx';
 import { AiInsightsView } from './components/customer/AiInsightsView.tsx';
 import { ActivityView } from './components/customer/ActivityView.tsx';
 import { SettingsView } from './components/customer/SettingsView.tsx';
+import { AssetVaultView } from './components/customer/AssetVaultView.tsx';
 import { AdminSupervisorView } from './components/admin/AdminSupervisorView.tsx';
 import { AdminLogin } from './components/admin/AdminLogin.tsx';
 import { TradeModal } from './components/customer/TradeModal.tsx';
@@ -781,6 +782,8 @@ export default function App() {
         );
       case 'activity':
         return <ActivityView activity={activity} />;
+      case 'asset-vault':
+        return <AssetVaultView portfolio={portfolio} />;
       case 'settings-profile':
         return <SettingsView user={user} />;
       default:
@@ -802,11 +805,15 @@ export default function App() {
           {renderContent()}
         </InstitutionalLayout>
       ) : isAdminTab ? (
-        <div className="min-h-screen bg-[#070A10] text-zinc-100 flex flex-col font-sans selection:bg-emerald-500/30 selection:text-emerald-300">
-          <main className="flex-1 w-full mx-auto p-0 m-0">
-            {renderContent()}
-          </main>
-        </div>
+        <InstitutionalLayout
+          user={user as User}
+          portfolio={portfolio}
+          currentTab={currentTab}
+          onSelectTab={navigateApp}
+          onLogout={handleLogout}
+        >
+          {renderContent()}
+        </InstitutionalLayout>
       ) : (
         
         <InstitutionalLayout
@@ -884,64 +891,66 @@ export default function App() {
       <TestimonialPopup />
 
       {/* Footer */}
-      <footer className="border-t border-zinc-800/80 bg-[#06090F] py-8 text-xs text-zinc-500">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="flex items-center space-x-2">
-                <div className="w-6 h-6 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-mono font-bold text-xs">
-                V
+      {isPublicTab && (
+        <footer className="border-t border-zinc-800/80 bg-[#06090F] py-8 text-xs text-zinc-500">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div className="flex items-center space-x-2">
+                  <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-mono font-bold text-xs">
+                  V
+                </div>
+                <span className="font-mono font-bold text-sm text-white">Verity-Capital Inv</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-400 font-mono">
+                  INSTITUTIONAL
+                </span>
               </div>
-              <span className="font-mono font-bold text-sm text-white">Verity-Capital Inv</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-400 font-mono">
-                INSTITUTIONAL
-              </span>
+
+              <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-400">
+                <button
+                  onClick={() => setCurrentTab('risk-disclosure')}
+                  className="hover:text-amber-400 transition-colors cursor-pointer"
+                >
+                  Risk Disclosure
+                </button>
+                <span>•</span>
+                <button
+                  onClick={() => setCurrentTab('features')}
+                  className="hover:text-white transition-colors cursor-pointer"
+                >
+                  Features & Architecture
+                </button>
+                <span>•</span>
+                <button
+                  onClick={() => setCurrentTab('about')}
+                  className="hover:text-white transition-colors cursor-pointer"
+                >
+                  About Us
+                </button>
+                <span>•</span>
+                <button
+                  onClick={() => setCurrentTab('terms')}
+                  className="hover:text-white transition-colors cursor-pointer"
+                >
+                  Terms of Service
+                </button>
+                <span>•</span>
+                <button
+                  onClick={() => setCurrentTab('privacy')}
+                  className="hover:text-white transition-colors cursor-pointer"
+                >
+                  Privacy Notice
+                </button>
+              </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-400">
-              <button
-                onClick={() => setCurrentTab('risk-disclosure')}
-                className="hover:text-amber-400 transition-colors cursor-pointer"
-              >
-                Risk Disclosure
-              </button>
-              <span>•</span>
-              <button
-                onClick={() => setCurrentTab('features')}
-                className="hover:text-white transition-colors cursor-pointer"
-              >
-                Features & Architecture
-              </button>
-              <span>•</span>
-              <button
-                onClick={() => setCurrentTab('about')}
-                className="hover:text-white transition-colors cursor-pointer"
-              >
-                About Us
-              </button>
-              <span>•</span>
-              <button
-                onClick={() => setCurrentTab('terms')}
-                className="hover:text-white transition-colors cursor-pointer"
-              >
-                Terms of Service
-              </button>
-              <span>•</span>
-              <button
-                onClick={() => setCurrentTab('privacy')}
-                className="hover:text-white transition-colors cursor-pointer"
-              >
-                Privacy Notice
-              </button>
+            <div className="pt-4 border-t border-zinc-900 text-[11px] text-zinc-500 leading-relaxed">
+              <p>
+                © {new Date().getFullYear()} Verity-Capital Inv Inc. (verity-capital.com). All rights reserved. Institutional Brokerage Platform. Secure execution and custody services.
+              </p>
             </div>
           </div>
-
-          <div className="pt-4 border-t border-zinc-900 text-[11px] text-zinc-500 leading-relaxed">
-            <p>
-              © {new Date().getFullYear()} Verity-Capital Inv Inc. (verity-capital.com). All rights reserved. Institutional Brokerage Platform. Secure execution and custody services.
-            </p>
-          </div>
-        </div>
-      </footer>
+        </footer>
+      )}
     </>
   );
 }

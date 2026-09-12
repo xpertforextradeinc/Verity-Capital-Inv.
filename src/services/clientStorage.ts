@@ -226,6 +226,7 @@ class ClientStorageEngine {
       email: 'alex.morgan@example.com',
       firstName: 'Alex',
       lastName: 'Morgan',
+      dateOfBirth: '1992-05-14',
       role: 'CUSTOMER',
       status: 'ACTIVE',
       isUpgraded: false,
@@ -506,6 +507,15 @@ class ClientStorageEngine {
       const port = this.getPortfolio(userId);
       port.simulatedCashBalance = round(port.simulatedCashBalance + amount);
       port.totalEquity = round(port.totalEquity + amount);
+      
+      // Also update the 'spot' wallet if it exists
+      if (port.wallets) {
+        const spot = port.wallets.find(w => w.id === 'spot');
+        if (spot) {
+          spot.balance = round(spot.balance + amount);
+        }
+      }
+      
       this.setStorage(`port_${userId}`, port);
       return { success: true, newBalance: port.simulatedCashBalance } as unknown as T;
     }
@@ -776,18 +786,54 @@ class ClientStorageEngine {
       id: `port_${userId}`,
       userId,
       baseCurrency: 'USD',
-      simulatedCashBalance: 100000.00,
+      simulatedCashBalance: 0.00,
       investedBalance: 0,
-      totalEquity: 100000.00,
+      totalEquity: 0.00,
       unrealizedPnl: 0,
       unrealizedPnlPercent: 0,
       dayPnl: 0,
       dayPnlPercent: 0,
+      wallets: [
+        { id: 'spot', name: 'Institutional Spot Wallet', balance: 0.00, asset: 'USD' },
+        { id: 'savings', name: 'High-Yield Savings Vault', balance: 0.00, asset: 'USD' },
+        { id: 'trading', name: 'Active Trading Account', balance: 0.00, asset: 'USD' },
+      ],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
     this.setStorage(`port_${userId}`, newPort);
     return newPort;
+  }
+
+  public internalTransfer(userId: string, fromWalletId: string, toWalletId: string, amount: number): Portfolio {
+    const port = this.getPortfolio(userId);
+    if (!port.wallets) {
+      port.wallets = [
+        { id: 'spot', name: 'Institutional Spot Wallet', balance: port.simulatedCashBalance, asset: 'USD' },
+        { id: 'savings', name: 'High-Yield Savings Vault', balance: 0.00, asset: 'USD' },
+        { id: 'trading', name: 'Active Trading Account', balance: 0.00, asset: 'USD' },
+      ];
+    }
+
+    const fromWallet = port.wallets.find(w => w.id === fromWalletId);
+    const toWallet = port.wallets.find(w => w.id === toWalletId);
+
+    if (!fromWallet || !toWallet) throw new Error('Invalid wallet selection');
+    if (fromWallet.balance < amount) throw new Error('Insufficient funds in source wallet');
+
+    fromWallet.balance -= amount;
+    toWallet.balance += amount;
+
+    // Update main simulatedCashBalance as the sum of all USD wallets
+    port.simulatedCashBalance = port.wallets
+      .filter(w => w.asset === 'USD')
+      .reduce((sum, w) => sum + w.balance, 0);
+    
+    port.totalEquity = port.simulatedCashBalance + port.investedBalance;
+    port.updatedAt = new Date().toISOString();
+    
+    this.setStorage(`port_${userId}`, port);
+    return port;
   }
 
   public getPositions(userId: string): Position[] {
@@ -796,9 +842,9 @@ class ClientStorageEngine {
 
   public resetPortfolio(userId: string): Portfolio {
     const port = this.getPortfolio(userId);
-    port.simulatedCashBalance = 100000.00;
+    port.simulatedCashBalance = 0.00;
     port.investedBalance = 0;
-    port.totalEquity = 100000.00;
+    port.totalEquity = 0.00;
     port.unrealizedPnl = 0;
     port.unrealizedPnlPercent = 0;
     this.setStorage(`port_${userId}`, port);

@@ -12,6 +12,7 @@ import {
   ChevronRight,
   ShieldCheck,
   RotateCcw,
+  RefreshCw,
   BookOpen,
   ArrowDownLeft,
   UserCheck,
@@ -24,7 +25,10 @@ import {
   Award,
   Layers,
   Activity,
-  Lock
+  Lock,
+  ArrowRightLeft,
+  Smartphone,
+  ChevronDown
 } from 'lucide-react';
 import {
   AreaChart,
@@ -39,6 +43,7 @@ import { RiskBanner } from '../common/RiskBanner.tsx';
 import { CustodyTransfersModal } from './CustodyTransfersModal.tsx';
 import { AssetSpecsModal } from './AssetSpecsModal.tsx';
 import { KycModal } from './KycModal.tsx';
+import { InternalTransferModal } from './InternalTransferModal.tsx';
 import { CryptoPortfolioCard } from './CryptoPortfolioCard.tsx';
 import { AccountUpgradeSection } from './AccountUpgradeSection.tsx';
 import { api } from '../../services/api.ts';
@@ -76,6 +81,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onOpenAuth,
 }) => {
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+  const [isInternalModalOpen, setIsInternalModalOpen] = useState(false);
   const [isAssetSpecsOpen, setIsAssetSpecsOpen] = useState(false);
   const [isKycModalOpen, setIsKycModalOpen] = useState(false);
   const [selectedSpecSymbol, setSelectedSpecSymbol] = useState('BTC');
@@ -199,126 +205,165 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         onClose={() => setIsKycModalOpen(false)}
       />
 
+      {portfolio && (
+        <InternalTransferModal
+          portfolio={portfolio}
+          isOpen={isInternalModalOpen}
+          onClose={() => setIsInternalModalOpen(false)}
+          onSuccess={(updated) => {
+            if (onResetPortfolio) onResetPortfolio();
+          }}
+        />
+      )}
+
       {/* 1. HERO FINANCIAL OVERVIEW: TOTAL ACCOUNT BALANCE */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-[#091122] to-[#060A14] border border-white/10 p-6 sm:p-8 shadow-2xl">
+      <div className="relative overflow-hidden rounded-[2.5rem] bg-zinc-950 border border-zinc-800 p-8 sm:p-10 shadow-2xl group">
+        {/* Decorative Grid Pattern */}
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, #10b981 1px, transparent 0)', backgroundSize: '32px 32px' }}></div>
+        
         {/* Ambient background glow */}
-        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/3 -mb-20 w-60 h-60 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -right-20 -top-20 w-80 h-80 bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none group-hover:bg-emerald-500/15 transition-all duration-700"></div>
+        <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-blue-500/10 rounded-full blur-[100px] pointer-events-none group-hover:bg-blue-500/15 transition-all duration-700"></div>
 
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          {/* Balance Metrics */}
-          <div className="space-y-3">
-            <div className="flex items-center space-x-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-cyan-400/90 font-mono">
-                Total Portfolio Equity
-              </span>
-              <span className="flex items-center space-x-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[10px] font-medium text-emerald-300">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span>Live Custody</span>
-              </span>
-            </div>
-
-            <div className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white font-mono">
-              ${totalEquity.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm pt-1">
-              <div className={`inline-flex items-center space-x-1.5 px-3 py-1 rounded-xl font-mono font-bold ${
-                isPnlPositive 
-                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' 
-                  : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
-              }`}>
-                {isPnlPositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-                <span>
-                  {isPnlPositive ? '+' : ''}${unrealizedPnl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-                <span>({isPnlPositive ? '+' : ''}{unrealizedPnlPercent.toFixed(2)}%)</span>
+        <div className="relative flex flex-col md:flex-row md:items-end justify-between gap-8">
+          <div className="space-y-6">
+            <div className="flex items-center space-x-3">
+              <div className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center space-x-2">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em]">Institutional Tier Active</span>
               </div>
+              <div className="px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">
+                Verified Node
+              </div>
+            </div>
+            
+            <div>
+              <h1 className="text-[11px] font-black text-zinc-500 uppercase tracking-[0.3em] mb-3">Net Portfolio Equity</h1>
+              <div className="flex items-baseline space-x-4">
+                <span className="text-5xl sm:text-7xl font-black text-white tracking-tighter tabular-nums leading-none">
+                  ${totalEquity.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+                <span className="text-xl font-mono font-bold text-emerald-500/60 uppercase">USD</span>
+              </div>
+            </div>
 
-              <span className="text-zinc-400 font-medium">All-time return</span>
-              <span className="text-zinc-600 hidden sm:inline">•</span>
-              <span className="text-zinc-400 hidden sm:inline">24h Change: <strong className="text-emerald-400 font-mono">+$1,842.10 (+1.78%)</strong></span>
+            <div className="flex items-center space-x-8 pt-2">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest mb-1.5">24h Net Gain</span>
+                <div className="flex items-center text-emerald-400 font-mono font-black text-base">
+                  <TrendingUp className="w-4 h-4 mr-1.5" />
+                  <span>+$2,492.10</span>
+                  <span className="ml-2 text-[11px] opacity-70">(+1.24%)</span>
+                </div>
+              </div>
+              <div className="w-px h-10 bg-zinc-800/50"></div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest mb-1.5">Account Status</span>
+                <div className="text-white font-mono font-black text-base flex items-center space-x-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                  <span>ACTIVE</span>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Primary Quick Actions */}
-          <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 shrink-0 pt-2 lg:pt-0">
-            <button
-              id="open-custody-transfers-btn"
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button 
               onClick={() => setIsTransferModalOpen(true)}
-              className="flex-1 sm:flex-initial bg-[#0c152a] hover:bg-[#111e3b] border border-cyan-400/30 hover:border-cyan-400/60 text-cyan-200 hover:text-white font-bold text-xs sm:text-sm px-5 py-3.5 rounded-2xl flex items-center justify-center space-x-2 transition-all cursor-pointer shadow-lg shadow-cyan-950/40"
+              className="px-10 py-5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-black text-sm uppercase tracking-widest shadow-2xl shadow-emerald-500/30 transition-all flex items-center justify-center space-x-3 active:scale-95"
             >
-              <Wallet className="w-4 h-4 text-cyan-400" />
-              <span>Transfer Funds</span>
+              <ArrowDownLeft className="w-5 h-5" />
+              <span>Deposit Funds</span>
             </button>
-
-            <button
-              id="open-trade-modal-btn"
+            <button 
               onClick={() => onOpenTrade()}
-              className="flex-1 sm:flex-initial bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-zinc-950 font-bold text-xs sm:text-sm px-6 py-3.5 rounded-2xl flex items-center justify-center space-x-2 shadow-lg shadow-amber-500/20 transition-all cursor-pointer"
+              className="px-10 py-5 rounded-2xl bg-zinc-900 hover:bg-zinc-800 text-white font-black text-sm uppercase tracking-widest border border-zinc-800 transition-all flex items-center justify-center space-x-3 active:scale-95"
             >
-              <Zap className="w-4 h-4 fill-current" />
-              <span>Trade Assets</span>
+              <RotateCcw className="w-4 h-4" />
+              <span>Portfolio Pulse</span>
             </button>
           </div>
         </div>
       </div>
 
       {/* 2. THREE HIGH-DENSITY FINANCIAL METRIC CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         {/* Metric 1: Available Liquid Cash */}
-        <div className="bg-[#070D1A] border border-white/10 rounded-2xl p-4 sm:p-5 shadow-md relative overflow-hidden group hover:border-cyan-400/40 transition-colors">
-          <div className="flex items-center justify-between text-zinc-400 text-xs">
-            <span className="font-semibold uppercase tracking-wider text-[11px] text-zinc-400">Available Liquid Cash</span>
+        <div className="bg-[#0B0F19] border border-zinc-800/80 rounded-2xl p-5 shadow-lg relative overflow-hidden group hover:border-emerald-500/40 transition-all">
+          <div className="flex items-center justify-between text-zinc-400 text-xs mb-3">
+            <span className="font-bold uppercase tracking-[0.15em] text-[10px] text-zinc-500">Available USD</span>
             <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
               <DollarSign className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-3 font-mono text-2xl sm:text-3xl font-bold text-white tracking-tight">
+          <div className="font-mono text-3xl font-black text-white tracking-tight">
             ${cashBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
-          <div className="mt-2 flex items-center justify-between text-xs text-zinc-400 pt-2 border-t border-white/5">
-            <span>Purchasing Power:</span>
-            <span className="font-mono text-emerald-400 font-semibold">100% Spot Ready</span>
+          <div className="mt-4 flex items-center justify-between text-[10px] text-zinc-500 pt-3 border-t border-zinc-800/50">
+            <span className="uppercase tracking-widest font-bold">Buying Power</span>
+            <span className="font-mono text-emerald-400 font-black tracking-tighter">MAX READY</span>
           </div>
         </div>
 
         {/* Metric 2: Invested Crypto Assets */}
-        <div className="bg-[#070D1A] border border-white/10 rounded-2xl p-4 sm:p-5 shadow-md relative overflow-hidden group hover:border-cyan-400/40 transition-colors">
-          <div className="flex items-center justify-between text-zinc-400 text-xs">
-            <span className="font-semibold uppercase tracking-wider text-[11px] text-zinc-400">Invested Crypto Value</span>
-            <div className="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center">
+        <div className="bg-[#0B0F19] border border-zinc-800/80 rounded-2xl p-5 shadow-lg relative overflow-hidden group hover:border-emerald-500/40 transition-all">
+          <div className="flex items-center justify-between text-zinc-400 text-xs mb-3">
+            <span className="font-bold uppercase tracking-[0.15em] text-[10px] text-zinc-500">Asset Value</span>
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
               <PieIcon className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-3 font-mono text-2xl sm:text-3xl font-bold text-white tracking-tight">
+          <div className="font-mono text-3xl font-black text-white tracking-tight">
             ${invested.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
-          <div className="mt-2 flex items-center justify-between text-xs text-zinc-400 pt-2 border-t border-white/5">
-            <span>Active Allocations:</span>
-            <span className="font-mono text-cyan-300 font-semibold">{positions.length || 2} Asset Holdings</span>
+          <div className="mt-4 flex items-center justify-between text-[10px] text-zinc-500 pt-3 border-t border-zinc-800/50">
+            <span className="uppercase tracking-widest font-bold">Allocations</span>
+            <span className="font-mono text-emerald-400 font-black tracking-tighter">{positions.length || 0} POSITIONS</span>
+          </div>
+        </div>
+
+        {/* Quick Wallet Transfer Card (Internal) */}
+        <div 
+          onClick={() => setIsInternalModalOpen(true)}
+          className="bg-[#0B0F19] border border-zinc-800/80 hover:border-emerald-500/40 rounded-2xl p-5 shadow-lg relative overflow-hidden cursor-pointer transition-all group"
+        >
+          <div className="flex items-center justify-between text-zinc-400 text-xs mb-3">
+            <span className="font-bold uppercase tracking-[0.15em] text-[10px] text-zinc-500">Internal Transfer</span>
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+              <RefreshCw className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="font-sans text-xl font-black text-white tracking-tight leading-tight">
+            Move Funds Instantly
+          </div>
+          <div className="mt-4 flex items-center justify-between text-[10px] text-zinc-500 pt-3 border-t border-zinc-800/50">
+            <span className="uppercase tracking-widest font-bold">Between Wallets</span>
+            <span className="text-emerald-400 font-black flex items-center space-x-1 uppercase tracking-tighter">
+              <span>Transfer</span>
+              <ChevronRight className="w-3 h-3" />
+            </span>
           </div>
         </div>
 
         {/* Metric 3: Custody & Security Tier */}
         <div 
           onClick={() => { setSelectedSpecSymbol('BTC'); setIsAssetSpecsOpen(true); }}
-          className="bg-[#070D1A] border border-white/10 hover:border-amber-500/40 rounded-2xl p-4 sm:p-5 shadow-md relative overflow-hidden cursor-pointer transition-all group"
+          className="bg-[#0B0F19] border border-zinc-800/80 hover:border-emerald-500/40 rounded-2xl p-5 shadow-lg relative overflow-hidden cursor-pointer transition-all group"
         >
-          <div className="flex items-center justify-between text-zinc-400 text-xs">
-            <span className="font-semibold uppercase tracking-wider text-[11px] text-zinc-400">Security & Custody Tier</span>
-            <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+          <div className="flex items-center justify-between text-zinc-400 text-xs mb-3">
+            <span className="font-bold uppercase tracking-[0.15em] text-[10px] text-zinc-500">Trust Level</span>
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center group-hover:scale-105 transition-transform">
               <ShieldCheck className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-3 font-sans text-xl sm:text-2xl font-bold text-white tracking-tight flex items-center space-x-2">
-            <span>{user.isUpgraded ? 'Institutional Prime' : 'Standard Vault'}</span>
+          <div className="font-sans text-xl font-black text-white tracking-tight leading-tight">
+            {user.isUpgraded ? 'Institutional Prime' : 'Standard Vault'}
           </div>
-          <div className="mt-2 flex items-center justify-between text-xs text-zinc-400 pt-2 border-t border-white/5">
-            <span className="text-zinc-400">Specifications & Rail:</span>
-            <span className="text-amber-400 font-semibold group-hover:underline flex items-center space-x-1">
-              <span>View Specs</span>
-              <ChevronRight className="w-3.5 h-3.5" />
+          <div className="mt-4 flex items-center justify-between text-[10px] text-zinc-500 pt-3 border-t border-zinc-800/50">
+            <span className="uppercase tracking-widest font-bold">Security Grade</span>
+            <span className="text-emerald-400 font-black flex items-center space-x-1 uppercase tracking-tighter">
+              <span>Specs</span>
+              <ChevronRight className="w-3 h-3" />
             </span>
           </div>
         </div>
@@ -345,143 +390,121 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         }}
       />
 
-      {/* 5. PERFORMANCE CHART & TOP ASSET MOVERS */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left 2 Cols: Performance Area Chart */}
-        <div className="lg:col-span-2 bg-[#070D1A] border border-white/10 rounded-3xl p-5 sm:p-6 shadow-xl flex flex-col justify-between">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-            <div>
-              <div className="flex items-center space-x-2">
-                <h3 className="text-base font-bold text-white">Net Portfolio Equity Curve</h3>
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-400/10 text-cyan-300 border border-cyan-400/30">
-                  Continuous Mark-to-Market
-                </span>
+      {/* 5. RECENT ACTIVITY & MARKET CONTEXT */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Recent Institutional Activity */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="flex items-center justify-between px-2">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 rounded-xl bg-zinc-900 border border-zinc-800">
+                <Activity className="w-4 h-4 text-emerald-400" />
               </div>
-              <p className="text-xs text-zinc-400 mt-1">
-                Real-time spot index pricing across segregated cold storage balances
-              </p>
+              <h3 className="text-sm font-black text-white uppercase tracking-widest">Institutional Ledger</h3>
             </div>
-
-            {/* Timeframe Selectors */}
-            <div className="flex items-center bg-[#050814] border border-white/10 rounded-xl p-1 shrink-0">
-              {(['1D', '1W', '1M', '1Y', 'ALL'] as const).map((tf) => (
-                <button
-                  key={tf}
-                  onClick={() => setSelectedTimeframe(tf)}
-                  className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
-                    selectedTimeframe === tf
-                      ? 'bg-cyan-400/20 text-cyan-300 border border-cyan-400/40 shadow-sm'
-                      : 'text-zinc-500 hover:text-zinc-300'
-                  }`}
-                >
-                  {tf}
-                </button>
-              ))}
-            </div>
+            <button className="text-[10px] font-black text-zinc-500 uppercase tracking-widest hover:text-emerald-400 transition-colors">
+              Request Full Audit
+            </button>
           </div>
 
-          <div className="h-64 sm:h-72 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#22D3EE" stopOpacity={0.35} />
-                    <stop offset="95%" stopColor="#22D3EE" stopOpacity={0.0} />
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="time" stroke="#52525B" fontSize={10} tickLine={false} />
-                <YAxis
-                  domain={['auto', 'auto']}
-                  stroke="#52525B"
-                  fontSize={10}
-                  tickLine={false}
-                  tickFormatter={(val) => `$${(val / 1000).toFixed(0)}k`}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#070D1A',
-                    borderColor: '#22D3EE40',
-                    borderRadius: '12px',
-                    fontSize: '12px',
-                    fontFamily: 'monospace',
-                    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
-                  }}
-                  formatter={(value: any) => [`$${Number(value).toLocaleString('en-US', { minimumFractionDigits: 2 })}`, 'Portfolio Equity']}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="equity"
-                  stroke="#22D3EE"
-                  strokeWidth={2.5}
-                  fillOpacity={1}
-                  fill="url(#equityGradient)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+          <div className="bg-zinc-950 border border-zinc-900 rounded-[2.5rem] overflow-hidden shadow-2xl">
+            <div className="divide-y divide-zinc-900">
+              {[
+                { type: 'Deposit', amount: '+$50,000.00', status: 'Settled', date: 'Today, 09:14', icon: ArrowDownLeft, color: 'text-emerald-400' },
+                { type: 'Trade', amount: '-0.24 BTC', status: 'Filled', date: 'Yesterday, 23:45', icon: RefreshCw, color: 'text-zinc-300' },
+                { type: 'Internal', amount: '$10,000.00', status: 'Instant', date: 'Yesterday, 14:20', icon: ArrowRightLeft, color: 'text-blue-400' },
+                { type: 'Reward', amount: '+$142.20', status: 'Credited', date: '2 days ago', icon: Sparkles, color: 'text-emerald-400' },
+              ].map((activity, i) => (
+                <div key={i} className="p-6 flex items-center justify-between hover:bg-zinc-900/40 transition-colors group cursor-pointer">
+                  <div className="flex items-center space-x-5">
+                    <div className="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-500 group-hover:text-white group-hover:border-zinc-700 transition-all">
+                      <activity.icon className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="text-base font-bold text-white leading-tight">{activity.type} Settlement</p>
+                      <p className="text-[10px] text-zinc-500 font-mono mt-1 uppercase tracking-widest">{activity.date} • NODE_ID: VC_US_01</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className={`text-base font-black font-mono ${activity.color}`}>{activity.amount}</p>
+                    <p className="text-[10px] font-black text-zinc-600 uppercase tracking-tighter mt-1">{activity.status}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="p-6 bg-zinc-900/20 border-t border-zinc-900 text-center">
+              <button className="text-[11px] font-black text-zinc-500 uppercase tracking-[0.3em] hover:text-white transition-colors">
+                View All Historical Settlements
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Right 1 Col: Top Crypto Movers & Market Quick Signals */}
-        <div className="bg-[#070D1A] border border-white/10 rounded-3xl p-5 sm:p-6 shadow-xl flex flex-col justify-between space-y-4">
-          <div>
-            <div className="flex items-center justify-between pb-3 border-b border-white/10">
-              <h3 className="text-sm font-bold text-white flex items-center space-x-2">
-                <Activity className="w-4 h-4 text-cyan-400" />
-                <span>Market Pulse & Movers</span>
-              </h3>
-              <button
-                onClick={() => onNavigateTab('markets')}
-                className="text-xs text-cyan-400 hover:text-cyan-300 font-semibold cursor-pointer"
-              >
-                All Spot Markets →
-              </button>
-            </div>
-
-            <div className="divide-y divide-white/5 mt-2">
-              {topGainers.map((inst) => {
-                const isPositive = inst.changePercent >= 0;
-                return (
-                  <div
-                    key={inst.symbol}
-                    onClick={() => onOpenTrade(inst)}
-                    className="py-3 flex items-center justify-between hover:bg-white/[0.02] px-2 rounded-xl transition-colors cursor-pointer group"
-                  >
-                    <div className="flex items-center space-x-2.5">
-                      <div className="w-8 h-8 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center font-bold text-xs text-white group-hover:border-cyan-400/40">
-                        {inst.symbol.slice(0, 3)}
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold text-white group-hover:text-cyan-300 transition-colors">
-                          {inst.name}
-                        </div>
-                        <div className="text-[10px] text-zinc-400 font-mono">
-                          {inst.symbol}/USD
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="text-right font-mono">
-                      <div className="text-xs font-bold text-white">
-                        ${inst.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </div>
-                      <div className={`text-[11px] font-bold ${isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
-                        {isPositive ? '+' : ''}{inst.changePercent.toFixed(2)}%
-                      </div>
-                    </div>
+        {/* Support & Relationship Manager */}
+        <div className="space-y-4">
+          <div className="px-2">
+            <h3 className="text-sm font-black text-white uppercase tracking-widest">Relationship Support</h3>
+          </div>
+          
+          <div className="bg-zinc-950 border border-zinc-900 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent pointer-events-none"></div>
+            
+            <div className="relative space-y-8">
+              <div className="flex items-center space-x-5">
+                <div className="relative">
+                  <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center overflow-hidden">
+                    <img 
+                      src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=200&h=200" 
+                      alt="Manager" 
+                      className="w-full h-full object-cover opacity-90 grayscale group-hover:grayscale-0 transition-all duration-500"
+                      referrerPolicy="no-referrer"
+                    />
                   </div>
-                );
-              })}
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 border-[4px] border-zinc-950 rounded-full"></div>
+                </div>
+                <div>
+                  <p className="text-lg font-black text-white leading-tight">James Sterling</p>
+                  <p className="text-[10px] text-emerald-500/60 font-black uppercase tracking-[0.2em] mt-1">Lead Relationship Desk</p>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-zinc-900/50 border border-zinc-800">
+                <p className="text-xs text-zinc-400 leading-relaxed italic">
+                  "Institutional desk is active. Contact me directly for large-block execution or priority custody withdrawals."
+                </p>
+              </div>
+
+              <div className="space-y-3 pt-2">
+                <button className="w-full py-4 rounded-2xl bg-emerald-500 text-zinc-950 font-black text-xs uppercase tracking-widest shadow-xl shadow-emerald-500/10 hover:bg-emerald-400 transition-all flex items-center justify-center space-x-2">
+                  <span>Open Direct Line</span>
+                </button>
+                <button className="w-full py-4 rounded-2xl bg-zinc-900 text-white font-black text-xs uppercase tracking-widest border border-zinc-800 hover:bg-zinc-800 transition-all">
+                  Contact Institutional Desk
+                </button>
+              </div>
             </div>
           </div>
 
-          <div className="bg-[#050814] rounded-2xl p-4 border border-white/5 space-y-2">
-            <div className="flex items-center space-x-2 text-xs font-bold text-amber-300">
-              <Shield className="w-4 h-4" />
-              <span>Custody Verification</span>
+          {/* Service Health Card */}
+          <div className="bg-zinc-950 border border-zinc-900 rounded-[2.5rem] p-8 shadow-xl">
+            <div className="flex items-center justify-between mb-6">
+              <span className="text-[11px] font-black text-zinc-500 uppercase tracking-widest">Network Health</span>
+              <div className="flex items-center space-x-1.5">
+                <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                <span className="text-[10px] font-black text-emerald-500 uppercase">Operational</span>
+              </div>
             </div>
-            <p className="text-[11px] text-zinc-400 leading-relaxed">
-              All digital asset reserves are held in multi-signature cold storage vaults under 1:1 asset backing.
-            </p>
+            <div className="space-y-5">
+              {[
+                { label: 'Custody Rails', value: '100% SECURE', color: 'text-emerald-400' },
+                { label: 'Exchange Node', value: '14MS LATENCY', color: 'text-white' },
+                { label: 'Audit Engine', value: 'SYNCHRONIZED', color: 'text-white' },
+              ].map((stat, i) => (
+                <div key={i} className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">{stat.label}</span>
+                  <span className={`text-[11px] font-black font-mono ${stat.color}`}>{stat.value}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
