@@ -49,8 +49,8 @@ export const EditBalanceModal: React.FC<EditBalanceModalProps> = ({ email, onClo
   const rawAmount = Math.abs(Number(amount) || 0);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-md border border-cyan-300/25 bg-[#071021] p-6 shadow-[0_25px_100px_rgba(0,0,0,.5)] rounded-lg">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-3 sm:p-4 backdrop-blur-sm">
+      <div className="w-full max-w-md max-h-[92vh] overflow-y-auto border border-cyan-300/25 bg-[#071021] p-5 sm:p-6 shadow-[0_25px_100px_rgba(0,0,0,.5)] rounded-xl">
         {!showConfirm ? (
           <form onSubmit={handlePreSubmit}>
             <div className="mb-6 flex items-center justify-between">

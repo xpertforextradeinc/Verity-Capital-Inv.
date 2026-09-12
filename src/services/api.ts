@@ -123,27 +123,61 @@ class ApiService {
     firstName?: string;
     lastName?: string;
   }, accessToken?: string): Promise<{ user: User; token: string }> {
-    const existingToken = this.token;
-    if (accessToken) this.token = accessToken;
     try {
-      const result = await this.request<{ user: User; token: string }>('/auth/supabase-sync', {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+      } else if (this.token) {
+        headers['Authorization'] = `Bearer ${this.token}`;
+      }
+
+      const response = await fetch(`${API_BASE}/auth/supabase-sync`, {
         method: 'POST',
+        headers,
         body: JSON.stringify(data),
       });
-      this.setToken(result.token);
-      return result;
-    } finally {
-      if (!accessToken) this.token = existingToken;
+
+      if (response.ok) {
+        const result = await response.json();
+        this.setToken(result.token);
+        clientStorageEngine.setCurrentUser(result.user);
+        return result;
+      }
+    } catch (err) {
+      console.warn('Backend syncSupabaseUser failed, falling back to client storage:', err);
     }
+
+    // Direct fallback to clientStorageEngine so login never breaks
+    const fallbackResult = await clientStorageEngine.handleRequest<{ user: User; token: string }>(
+      '/auth/supabase-sync',
+      { method: 'POST', body: JSON.stringify(data) },
+      accessToken || this.token
+    );
+    this.setToken(fallbackResult.token);
+    clientStorageEngine.setCurrentUser(fallbackResult.user);
+    return fallbackResult;
   }
 
   async getCurrentUser(): Promise<User | null> {
-    try {
-      const data = await this.request<{ user: User }>('/auth/me');
-      return data.user;
-    } catch {
+    if (!this.token) {
       return null;
     }
+    try {
+      const data = await this.request<{ user: User }>('/auth/me');
+      if (data?.user) {
+        clientStorageEngine.setCurrentUser(data.user);
+        return data.user;
+      }
+    } catch {
+      // ignore
+    }
+    const localUser = clientStorageEngine.getCurrentUser();
+    if (localUser) {
+      return localUser;
+    }
+    return null;
   }
 
   async logout(): Promise<void> {

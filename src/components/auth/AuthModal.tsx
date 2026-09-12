@@ -146,8 +146,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setErrorMsg(null);
     setIsSubmitting(true);
     try {
-      const { error } = await signInWithGoogleSupabase('/dashboard');
-      if (error) throw error;
+      if (onGoogleSignIn) {
+        await onGoogleSignIn(email);
+      } else {
+        const { error } = await signInWithGoogleSupabase('/dashboard');
+        if (error) throw error;
+      }
     } catch (err: any) {
       setErrorMsg(err.message || 'Google authentication failed');
       setIsSubmitting(false);
