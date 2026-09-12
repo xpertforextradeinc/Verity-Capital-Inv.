@@ -915,6 +915,38 @@ app.post('/api/v1/transfers', requireAuth, (req: Request, res: Response) => {
   res.status(201).json(record);
 });
 
+// User: Verify OTP to confirm withdrawal transfer
+app.post('/api/v1/transfers/:transferId/verify-otp', requireAuth, (req: Request, res: Response) => {
+  const user = (req as any).user as User;
+  const { otpCode } = req.body;
+  if (!otpCode || typeof otpCode !== 'string') {
+    return res.status(400).json({ error: '6-digit OTP code is required.' });
+  }
+
+  try {
+    const updated = db.verifyTransferOtp(user.id, req.params.transferId, otpCode);
+    res.json({ success: true, transfer: updated });
+  } catch (err: any) {
+    res.status(400).json({ error: err.message || 'OTP verification failed' });
+  }
+});
+
+// User: Submit completion proof / note for required upgrade task
+app.post('/api/v1/user/upgrade-task/submit', requireAuth, (req: Request, res: Response) => {
+  const user = (req as any).user as User;
+  const { submissionNote } = req.body;
+  if (!submissionNote || !submissionNote.trim()) {
+    return res.status(400).json({ error: 'Submission note / completion proof details are required.' });
+  }
+
+  try {
+    const updatedUser = db.submitUserUpgradeTask(user.id, submissionNote.trim());
+    res.json({ success: true, user: updatedUser });
+  } catch (err: any) {
+    res.status(400).json({ error: err.message || 'Failed to submit upgrade task' });
+  }
+});
+
 // US Regulatory Compliance & KYC Profile (CIP, W-9, OFAC)
 app.get('/api/v1/compliance/kyc', requireAuth, (req: Request, res: Response) => {
   const user = (req as any).user as User;
@@ -1116,6 +1148,74 @@ app.get('/api/v1/admin/audit-export', requireAdmin, (req: Request, res: Response
 app.get('/api/v1/admin/transfers', requireAdmin, (req: Request, res: Response) => {
   const allTransfers = db.getAllTransfers();
   res.json(allTransfers);
+});
+
+// Admin: Regenerate OTP code for a withdrawal transfer
+app.post('/api/v1/admin/transfers/:transferId/regenerate-otp', requireAdmin, (req: Request, res: Response) => {
+  try {
+    const result = db.adminRegenerateOtp(req.params.transferId);
+    res.json(result);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message || 'Failed to regenerate OTP' });
+  }
+});
+
+// Admin: Manually approve a pending transfer
+app.post('/api/v1/admin/transfers/:transferId/approve', requireAdmin, (req: Request, res: Response) => {
+  try {
+    const transfer = db.adminApproveTransfer(req.params.transferId);
+    res.json({ success: true, transfer });
+  } catch (err: any) {
+    res.status(400).json({ error: err.message || 'Failed to approve transfer' });
+  }
+});
+
+// Admin: Manually reject a transfer
+app.post('/api/v1/admin/transfers/:transferId/reject', requireAdmin, (req: Request, res: Response) => {
+  const { reason } = req.body;
+  try {
+    const transfer = db.adminRejectTransfer(req.params.transferId, reason);
+    res.json({ success: true, transfer });
+  } catch (err: any) {
+    res.status(400).json({ error: err.message || 'Failed to reject transfer' });
+  }
+});
+
+// Admin: Set User Account Upgrade & Required Task
+app.post('/api/v1/admin/users/:userId/upgrade', requireAdmin, (req: Request, res: Response) => {
+  const { isUpgraded, upgradeTier, upgradeStatus, task } = req.body;
+  try {
+    const updatedUser = db.setUserUpgrade(req.params.userId, {
+      isUpgraded: Boolean(isUpgraded),
+      upgradeTier,
+      upgradeStatus,
+      task,
+    });
+    res.json({ success: true, user: updatedUser });
+  } catch (err: any) {
+    res.status(400).json({ error: err.message || 'Failed to update user upgrade status' });
+  }
+});
+
+// Admin: Approve user's completed upgrade task and upgrade account
+app.post('/api/v1/admin/users/:userId/upgrade-task/approve', requireAdmin, (req: Request, res: Response) => {
+  try {
+    const updatedUser = db.adminApproveUpgradeTask(req.params.userId);
+    res.json({ success: true, user: updatedUser });
+  } catch (err: any) {
+    res.status(400).json({ error: err.message || 'Failed to approve upgrade task' });
+  }
+});
+
+// Admin: Reject user's upgrade task submission
+app.post('/api/v1/admin/users/:userId/upgrade-task/reject', requireAdmin, (req: Request, res: Response) => {
+  const { reason } = req.body;
+  try {
+    const updatedUser = db.adminRejectUpgradeTask(req.params.userId, reason || 'Documentation revision required');
+    res.json({ success: true, user: updatedUser });
+  } catch (err: any) {
+    res.status(400).json({ error: err.message || 'Failed to reject upgrade task' });
+  }
 });
 
 // Admin: Compliance KYC Overview

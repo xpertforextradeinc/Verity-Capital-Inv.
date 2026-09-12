@@ -228,6 +228,20 @@ class ClientStorageEngine {
       lastName: 'Morgan',
       role: 'CUSTOMER',
       status: 'ACTIVE',
+      isUpgraded: false,
+      upgradeTier: 'STANDARD',
+      upgradeStatus: 'TASK_REQUIRED',
+      upgradeTask: {
+        id: 'task_edd_w9_842',
+        title: 'Institutional W-9 Attestation & Source of Funds Attestation',
+        description: 'Complete and submit IRS Form W-9 alongside enhanced liquidity verification to unlock Institutional Prime Tier trading and daily withdrawal limits up to $1,000,000.',
+        requirementType: 'DOCUMENT_UPLOAD',
+        targetTier: 'INSTITUTIONAL_PRIME',
+        deadline: new Date(Date.now() + 86400000 * 7).toISOString(),
+        assignedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+        assignedBy: 'Compliance Desk (Supervisor)',
+        status: 'PENDING',
+      },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -526,22 +540,156 @@ class ClientStorageEngine {
       return { whatsappNumber: body.whatsappNumber } as unknown as T;
     }
 
-    // 10. Transfers
+    // 10. Transfers & OTP Verification
+    if (endpoint.startsWith('/transfers/') && endpoint.endsWith('/verify-otp')) {
+      const parts = endpoint.split('/');
+      const transferId = parts[2];
+      const transfers = this.getStorage<TransferRecord[]>(`transfers_${currentUser.id}`, []);
+      const target = transfers.find(t => t.id === transferId);
+      if (!target) {
+        throw new Error('Transfer record not found.');
+      }
+      if (target.otpCode && body.otpCode !== target.otpCode) {
+        target.otpAttempts = (target.otpAttempts || 0) + 1;
+        this.setStorage(`transfers_${currentUser.id}`, transfers);
+        throw new Error('Invalid OTP authorization code. Please enter the exact 6-digit code received from your Account Supervisor via email or live chat.');
+      }
+      target.status = 'CONFIRMED';
+      target.confirmedAt = new Date().toISOString();
+      target.notes = (target.notes || '') + ' [Supervisor OTP Verified]';
+      this.setStorage(`transfers_${currentUser.id}`, transfers);
+      return { success: true, transfer: target } as unknown as T;
+    }
+
+    if (endpoint === '/user/upgrade-task/submit') {
+      const user = this.getCurrentUser() || this.getDemoUser();
+      if (user.upgradeTask) {
+        user.upgradeTask.userSubmissionNote = body.submissionNote;
+        user.upgradeTask.submittedAt = new Date().toISOString();
+        user.upgradeTask.status = 'SUBMITTED';
+        user.upgradeStatus = 'TASK_SUBMITTED';
+        user.updatedAt = new Date().toISOString();
+        this.setCurrentUser(user);
+      }
+      return { success: true, user } as unknown as T;
+    }
+
+    // Admin Transfer OTP actions
+    if (endpoint.startsWith('/admin/transfers/')) {
+      const parts = endpoint.split('/');
+      const transferId = parts[3];
+      const action = parts[4];
+      const transfers = this.getStorage<TransferRecord[]>(`transfers_${currentUser.id}`, []);
+      const target = transfers.find(t => t.id === transferId);
+
+      if (action === 'regenerate-otp') {
+        const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+        if (target) {
+          target.otpCode = newOtp;
+          target.otpGeneratedAt = new Date().toISOString();
+          target.status = 'PENDING_OTP';
+          this.setStorage(`transfers_${currentUser.id}`, transfers);
+        }
+        return { transfer: target, newOtp } as unknown as T;
+      }
+      if (action === 'approve') {
+        if (target) {
+          target.status = 'CONFIRMED';
+          target.confirmedAt = new Date().toISOString();
+          this.setStorage(`transfers_${currentUser.id}`, transfers);
+        }
+        return { success: true, transfer: target } as unknown as T;
+      }
+      if (action === 'reject') {
+        if (target) {
+          target.status = 'REJECTED';
+          target.notes = `${target.notes || ''} [Rejected by Supervisor: ${body.reason || 'Verification Failed'}]`;
+          this.setStorage(`transfers_${currentUser.id}`, transfers);
+        }
+        return { success: true, transfer: target } as unknown as T;
+      }
+    }
+
+    // Admin User Upgrade actions
+    if (endpoint.startsWith('/admin/users/') && endpoint.includes('/upgrade')) {
+      const parts = endpoint.split('/');
+      const userId = parts[3];
+      const users = this.getStorage<User[]>('all_users', []);
+      let targetUser = users.find(u => u.id === userId) || (currentUser.id === userId ? currentUser : null);
+
+      if (endpoint.endsWith('/upgrade-task/approve')) {
+        if (targetUser) {
+          targetUser.isUpgraded = true;
+          targetUser.upgradeTier = targetUser.upgradeTask?.targetTier || 'INSTITUTIONAL_PRIME';
+          targetUser.upgradeStatus = 'UPGRADED';
+          if (targetUser.upgradeTask) targetUser.upgradeTask.status = 'APPROVED';
+          targetUser.updatedAt = new Date().toISOString();
+          if (currentUser.id === targetUser.id) this.setCurrentUser(targetUser);
+          this.setStorage('all_users', users);
+        }
+        return { success: true, user: targetUser } as unknown as T;
+      }
+      if (endpoint.endsWith('/upgrade-task/reject')) {
+        if (targetUser && targetUser.upgradeTask) {
+          targetUser.upgradeTask.status = 'REJECTED';
+          targetUser.upgradeTask.rejectionReason = body.reason;
+          targetUser.upgradeStatus = 'TASK_REQUIRED';
+          targetUser.updatedAt = new Date().toISOString();
+          if (currentUser.id === targetUser.id) this.setCurrentUser(targetUser);
+          this.setStorage('all_users', users);
+        }
+        return { success: true, user: targetUser } as unknown as T;
+      }
+      if (endpoint.endsWith('/upgrade')) {
+        if (targetUser) {
+          targetUser.isUpgraded = Boolean(body.isUpgraded);
+          if (body.upgradeTier) targetUser.upgradeTier = body.upgradeTier;
+          if (body.upgradeStatus) targetUser.upgradeStatus = body.upgradeStatus;
+          if (body.task) {
+            targetUser.upgradeTask = {
+              id: body.task.id || `task_${Date.now()}`,
+              title: body.task.title || 'Institutional Verification Task',
+              description: body.task.description || 'Complete required verification.',
+              requirementType: body.task.requirementType || 'DOCUMENT_UPLOAD',
+              targetTier: body.task.targetTier || targetUser.upgradeTier || 'INSTITUTIONAL_PRIME',
+              deadline: body.task.deadline || new Date(Date.now() + 86400000 * 7).toISOString(),
+              assignedAt: new Date().toISOString(),
+              assignedBy: 'Compliance Desk (Supervisor)',
+              status: body.task.status || 'PENDING',
+            };
+          } else if (body.task === null) {
+            targetUser.upgradeTask = null;
+          }
+          targetUser.updatedAt = new Date().toISOString();
+          if (currentUser.id === targetUser.id) this.setCurrentUser(targetUser);
+          this.setStorage('all_users', users);
+        }
+        return { success: true, user: targetUser } as unknown as T;
+      }
+    }
+
     if (endpoint === '/transfers' || endpoint === '/admin/transfers') {
       if (method === 'POST') {
         const transfers = this.getStorage<TransferRecord[]>(`transfers_${currentUser.id}`, []);
+        const isWithdrawal = body.type === 'WITHDRAW_USD' || body.type === 'WITHDRAW_CRYPTO';
+        const otpCode = isWithdrawal ? Math.floor(100000 + Math.random() * 900000).toString() : undefined;
+
         const newTransfer: TransferRecord = {
           id: `tr_${Date.now()}`,
           userId: currentUser.id,
           type: body.type,
           asset: body.asset,
           amount: body.amount,
-          status: 'COMPLETED',
+          status: isWithdrawal ? 'PENDING_OTP' : 'COMPLETED',
           destinationAddress: body.destinationAddress,
           txHash: `0x${Math.random().toString(16).substring(2, 18)}`,
-          notes: body.notes || 'Institutional Transfer',
+          notes: body.notes || (isWithdrawal ? 'Awaiting supervisor OTP confirmation' : 'Institutional Transfer'),
+          otpRequired: isWithdrawal,
+          otpCode: otpCode,
+          otpGeneratedAt: isWithdrawal ? new Date().toISOString() : undefined,
+          otpAttempts: 0,
           createdAt: new Date().toISOString(),
-          confirmedAt: new Date().toISOString(),
+          confirmedAt: isWithdrawal ? undefined : new Date().toISOString(),
         };
         transfers.unshift(newTransfer);
         this.setStorage(`transfers_${currentUser.id}`, transfers);

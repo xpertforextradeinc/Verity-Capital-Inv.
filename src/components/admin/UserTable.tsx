@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit3, CheckCircle2, Ban, PauseCircle, PlayCircle, ShieldCheck } from 'lucide-react';
+import { Edit3, CheckCircle2, Ban, PauseCircle, PlayCircle, ShieldCheck, Award, Sparkles, Clock } from 'lucide-react';
 import { AccountStatusDropdown, AccountStatus } from './AccountStatusDropdown.tsx';
 import { VerifyToggle } from './VerifyToggle.tsx';
 import { AdminCurrency } from './EditBalanceModal.tsx';
@@ -13,12 +13,25 @@ export interface AdminProfile {
   country: string | null;
   created_at: string;
   last_sign_in?: string | null;
+  isUpgraded?: boolean;
+  upgradeStatus?: 'NOT_REQUESTED' | 'TASK_REQUIRED' | 'TASK_SUBMITTED' | 'UPGRADED';
+  upgradeTier?: string;
+  upgradeTask?: {
+    id: string;
+    title: string;
+    description: string;
+    status: 'PENDING' | 'SUBMITTED' | 'APPROVED' | 'REJECTED';
+    submissionNote?: string;
+    submittedAt?: string;
+    completedAt?: string;
+  };
 }
 
 interface UserTableProps {
   users: AdminProfile[];
   busyId?: string | null;
   onBalance: (user: AdminProfile) => void;
+  onUpgrade?: (user: AdminProfile) => void;
   onVerified: (user: AdminProfile, value: boolean) => void;
   onStatus: (user: AdminProfile, value: AccountStatus) => void;
   onPromptApprove: (user: AdminProfile) => void;
@@ -48,6 +61,7 @@ export const UserTable: React.FC<UserTableProps> = ({
   users,
   busyId,
   onBalance,
+  onUpgrade,
   onVerified,
   onStatus,
   onPromptApprove,
@@ -61,6 +75,7 @@ export const UserTable: React.FC<UserTableProps> = ({
       {users.map((user) => {
         const status = (user.account_status || 'pending').toLowerCase();
         const isBusy = busyId === user.id;
+        const upgradeStatus = user.upgradeStatus || (user.isUpgraded ? 'UPGRADED' : 'NOT_REQUESTED');
 
         return (
           <div
@@ -70,12 +85,28 @@ export const UserTable: React.FC<UserTableProps> = ({
             {/* Top row: Email + Status badge */}
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
-                <div className="font-semibold text-white text-sm truncate">{user.email}</div>
+                <div className="font-semibold text-white text-sm truncate flex items-center space-x-1.5">
+                  <span className="truncate">{user.email}</span>
+                  {user.isUpgraded && (
+                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-400/20 text-amber-300 font-bold border border-amber-400/30 flex items-center space-x-0.5 shrink-0">
+                      <Sparkles className="w-2.5 h-2.5" />
+                      <span>PRO</span>
+                    </span>
+                  )}
+                </div>
                 <div className="text-[10px] font-mono text-zinc-500 truncate">ID: {user.id}</div>
               </div>
-              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0 border ${getStatusBadge(status)}`}>
-                {status}
-              </span>
+              <div className="flex items-center space-x-1.5 shrink-0">
+                {upgradeStatus === 'TASK_SUBMITTED' && (
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase bg-amber-500/20 text-amber-400 border border-amber-500/40 animate-pulse flex items-center space-x-1">
+                    <Clock className="w-2.5 h-2.5" />
+                    <span>Task Ready</span>
+                  </span>
+                )}
+                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0 border ${getStatusBadge(status)}`}>
+                  {status}
+                </span>
+              </div>
             </div>
 
             {/* Registration, Region & Activity info */}
@@ -125,41 +156,58 @@ export const UserTable: React.FC<UserTableProps> = ({
             </div>
 
             {/* Quick Action Touch Targets */}
-            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/10">
+            <div className="grid grid-cols-3 gap-1.5 pt-2 border-t border-white/10">
               <button
                 onClick={() => onBalance(user)}
                 disabled={isBusy}
-                className="flex items-center justify-center gap-1.5 min-h-[44px] py-2 px-3 rounded-lg bg-cyan-400/15 border border-cyan-400/40 text-cyan-300 hover:bg-cyan-400/25 active:scale-95 text-xs font-semibold transition-all disabled:opacity-50"
+                className="flex items-center justify-center gap-1 min-h-[40px] py-1.5 px-2 rounded-lg bg-cyan-400/15 border border-cyan-400/40 text-cyan-300 hover:bg-cyan-400/25 active:scale-95 text-[11px] font-semibold transition-all disabled:opacity-50"
               >
-                <Edit3 className="h-4 w-4" />
-                <span>Adjust Balance</span>
+                <Edit3 className="h-3.5 w-3.5" />
+                <span>Balance</span>
               </button>
+
+              {onUpgrade && (
+                <button
+                  onClick={() => onUpgrade(user)}
+                  disabled={isBusy}
+                  className={`flex items-center justify-center gap-1 min-h-[40px] py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-all disabled:opacity-50 ${
+                    upgradeStatus === 'TASK_SUBMITTED'
+                      ? 'bg-amber-500/25 border border-amber-500 text-amber-300 animate-pulse'
+                      : user.isUpgraded
+                      ? 'bg-amber-400/15 border border-amber-400/40 text-amber-300'
+                      : 'bg-indigo-500/15 border border-indigo-500/40 text-indigo-300'
+                  }`}
+                >
+                  <Award className="h-3.5 w-3.5" />
+                  <span>{upgradeStatus === 'TASK_SUBMITTED' ? 'Review' : 'Upgrade'}</span>
+                </button>
+              )}
 
               {status === 'suspended' ? (
                 <button
                   onClick={() => onPromptRemoveHold(user)}
                   disabled={isBusy}
-                  className="flex items-center justify-center gap-1.5 min-h-[44px] py-2 px-3 rounded-lg bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/30 active:scale-95 text-xs font-semibold transition-all disabled:opacity-50"
+                  className="flex items-center justify-center gap-1 min-h-[40px] py-1.5 px-2 rounded-lg bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/30 active:scale-95 text-[11px] font-semibold transition-all disabled:opacity-50"
                 >
-                  <PlayCircle className="h-4 w-4" />
-                  <span>Lift Hold</span>
+                  <PlayCircle className="h-3.5 w-3.5" />
+                  <span>Lift</span>
                 </button>
               ) : status === 'approved' || status === 'active' ? (
                 <button
                   onClick={() => onPromptSuspend(user)}
                   disabled={isBusy}
-                  className="flex items-center justify-center gap-1.5 min-h-[44px] py-2 px-3 rounded-lg bg-rose-500/20 border border-rose-500/40 text-rose-300 hover:bg-rose-500/30 active:scale-95 text-xs font-semibold transition-all disabled:opacity-50"
+                  className="flex items-center justify-center gap-1 min-h-[40px] py-1.5 px-2 rounded-lg bg-rose-500/20 border border-rose-500/40 text-rose-300 hover:bg-rose-500/30 active:scale-95 text-[11px] font-semibold transition-all disabled:opacity-50"
                 >
-                  <Ban className="h-4 w-4" />
+                  <Ban className="h-3.5 w-3.5" />
                   <span>Suspend</span>
                 </button>
               ) : (
                 <button
                   onClick={() => onPromptApprove(user)}
                   disabled={isBusy}
-                  className="flex items-center justify-center gap-1.5 min-h-[44px] py-2 px-3 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/30 active:scale-95 text-xs font-semibold transition-all disabled:opacity-50"
+                  className="flex items-center justify-center gap-1 min-h-[40px] py-1.5 px-2 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/30 active:scale-95 text-[11px] font-semibold transition-all disabled:opacity-50"
                 >
-                  <CheckCircle2 className="h-4 w-4" />
+                  <CheckCircle2 className="h-3.5 w-3.5" />
                   <span>Approve</span>
                 </button>
               )}
@@ -178,7 +226,7 @@ export const UserTable: React.FC<UserTableProps> = ({
             <th className="px-4 py-4">Registered / Activity</th>
             <th className="px-4 py-4">Region</th>
             <th className="px-4 py-4">Portfolio Balances</th>
-            <th className="px-4 py-4">KYC / Verified</th>
+            <th className="px-4 py-4">KYC & Tier</th>
             <th className="px-4 py-4">Account Status</th>
             <th className="px-4 py-4 text-right">Administrative Actions</th>
           </tr>
@@ -187,12 +235,28 @@ export const UserTable: React.FC<UserTableProps> = ({
           {users.map((user) => {
             const status = (user.account_status || 'pending').toLowerCase();
             const isBusy = busyId === user.id;
+            const upgradeStatus = user.upgradeStatus || (user.isUpgraded ? 'UPGRADED' : 'NOT_REQUESTED');
 
             return (
               <tr key={user.id} className="hover:bg-cyan-300/[0.03] transition-colors">
                 <td className="px-4 py-4">
-                  <div className="font-medium text-white text-sm">{user.email}</div>
-                  <div className="mt-0.5 font-mono text-[10px] text-zinc-500">ID: {user.id}</div>
+                  <div className="font-medium text-white text-sm flex items-center space-x-1.5">
+                    <span>{user.email}</span>
+                    {user.isUpgraded && (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-300 font-bold border border-amber-400/30 flex items-center space-x-0.5">
+                        <Sparkles className="w-2.5 h-2.5" />
+                        <span>PRO TIER</span>
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-0.5 font-mono text-[10px] text-zinc-500 flex items-center space-x-2">
+                    <span>ID: {user.id}</span>
+                    {upgradeStatus === 'TASK_SUBMITTED' && (
+                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 font-mono font-bold border border-amber-500/30 animate-pulse">
+                        ⚡ TASK SUBMITTED
+                      </span>
+                    )}
+                  </div>
                 </td>
 
                 <td className="px-4 py-4 font-mono text-zinc-400">
@@ -217,11 +281,20 @@ export const UserTable: React.FC<UserTableProps> = ({
                 </td>
 
                 <td className="px-4 py-4">
-                  <VerifyToggle
-                    verified={user.verified}
-                    disabled={isBusy}
-                    onChange={(value) => onVerified(user, value)}
-                  />
+                  <div className="space-y-1.5">
+                    <VerifyToggle
+                      verified={user.verified}
+                      disabled={isBusy}
+                      onChange={(value) => onVerified(user, value)}
+                    />
+                    <div className="text-[10px] font-mono">
+                      {user.isUpgraded ? (
+                        <span className="text-amber-400 font-semibold">Tier 3 (Institutional)</span>
+                      ) : (
+                        <span className="text-zinc-500">Tier 1 (Standard)</span>
+                      )}
+                    </div>
+                  </div>
                 </td>
 
                 <td className="px-4 py-4">
@@ -234,6 +307,25 @@ export const UserTable: React.FC<UserTableProps> = ({
 
                 <td className="px-4 py-4 text-right">
                   <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                    {/* Upgrade / Task button */}
+                    {onUpgrade && (
+                      <button
+                        onClick={() => onUpgrade(user)}
+                        disabled={isBusy}
+                        title="Manage Account Upgrade & Task Requirements"
+                        className={`flex items-center gap-1 rounded border px-2.5 py-1.5 text-[11px] font-semibold transition-colors disabled:opacity-50 ${
+                          upgradeStatus === 'TASK_SUBMITTED'
+                            ? 'border-amber-500 bg-amber-500/20 text-amber-300 animate-pulse hover:bg-amber-500/30'
+                            : user.isUpgraded
+                            ? 'border-amber-400/40 bg-amber-400/10 text-amber-300 hover:bg-amber-400/20'
+                            : 'border-indigo-500/40 bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20'
+                        }`}
+                      >
+                        <Award className="h-3 w-3" />
+                        <span>{upgradeStatus === 'TASK_SUBMITTED' ? 'Review Task' : 'Upgrade'}</span>
+                      </button>
+                    )}
+
                     {/* Approve button */}
                     {status !== 'approved' && status !== 'active' && (
                       <button

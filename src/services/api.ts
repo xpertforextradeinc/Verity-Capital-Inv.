@@ -453,6 +453,20 @@ class ApiService {
     });
   }
 
+  async verifyTransferOtp(transferId: string, otpCode: string): Promise<{ success: boolean; transfer: TransferRecord }> {
+    return this.request<{ success: boolean; transfer: TransferRecord }>(`/transfers/${transferId}/verify-otp`, {
+      method: 'POST',
+      body: JSON.stringify({ otpCode }),
+    });
+  }
+
+  async submitUpgradeTask(submissionNote: string): Promise<{ success: boolean; user: User }> {
+    return this.request<{ success: boolean; user: User }>('/user/upgrade-task/submit', {
+      method: 'POST',
+      body: JSON.stringify({ submissionNote }),
+    });
+  }
+
   // US Regulatory Compliance & KYC Profile
   async getKycProfile(): Promise<KycProfile> {
     return this.request<KycProfile>('/compliance/kyc');
@@ -479,6 +493,50 @@ class ApiService {
     return this.request<TransferRecord[]>('/admin/transfers');
   }
 
+  async adminRegenerateOtp(transferId: string): Promise<{ transfer: TransferRecord; newOtp: string }> {
+    return this.request<{ transfer: TransferRecord; newOtp: string }>(`/admin/transfers/${transferId}/regenerate-otp`, {
+      method: 'POST',
+    });
+  }
+
+  async adminApproveTransfer(transferId: string): Promise<{ success: boolean; transfer: TransferRecord }> {
+    return this.request<{ success: boolean; transfer: TransferRecord }>(`/admin/transfers/${transferId}/approve`, {
+      method: 'POST',
+    });
+  }
+
+  async adminRejectTransfer(transferId: string, reason?: string): Promise<{ success: boolean; transfer: TransferRecord }> {
+    return this.request<{ success: boolean; transfer: TransferRecord }>(`/admin/transfers/${transferId}/reject`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
+  }
+
+  async adminSetUserUpgrade(userId: string, data: {
+    isUpgraded: boolean;
+    upgradeTier?: string;
+    upgradeStatus?: string;
+    task?: any;
+  }): Promise<{ success: boolean; user: User }> {
+    return this.request<{ success: boolean; user: User }>(`/admin/users/${userId}/upgrade`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async adminApproveUpgradeTask(userId: string): Promise<{ success: boolean; user: User }> {
+    return this.request<{ success: boolean; user: User }>(`/admin/users/${userId}/upgrade-task/approve`, {
+      method: 'POST',
+    });
+  }
+
+  async adminRejectUpgradeTask(userId: string, reason?: string): Promise<{ success: boolean; user: User }> {
+    return this.request<{ success: boolean; user: User }>(`/admin/users/${userId}/upgrade-task/reject`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
+  }
+
   async adminGetKycProfiles(): Promise<{ user: User; kyc: KycProfile }[]> {
     return this.request<{ user: User; kyc: KycProfile }[]>('/admin/compliance/kyc');
   }
@@ -487,6 +545,27 @@ class ApiService {
     return this.request<KycProfile>(`/admin/compliance/kyc/${userId}`, {
       method: 'PATCH',
       body: JSON.stringify(updates),
+    });
+  }
+
+  async updateUserStatus(userId: string, status: 'APPROVED' | 'SUSPENDED' | 'ON_HOLD'): Promise<User> {
+    return this.request<User>(`/admin/users/${userId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: status === 'APPROVED' ? 'ACTIVE' : status }),
+    });
+  }
+
+  async updateTransferStatus(transferId: string, status: 'CONFIRMED' | 'REJECTED', reason?: string): Promise<{ success: boolean; transfer: TransferRecord }> {
+    if (status === 'CONFIRMED') {
+      return this.adminApproveTransfer(transferId);
+    } else {
+      return this.adminRejectTransfer(transferId, reason);
+    }
+  }
+
+  async updateTransferOtp(transferId: string, _newOtp?: string): Promise<{ transfer: TransferRecord; newOtp: string }> {
+    return this.request<{ transfer: TransferRecord; newOtp: string }>(`/admin/transfers/${transferId}/regenerate-otp`, {
+      method: 'POST',
     });
   }
 }

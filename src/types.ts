@@ -1,5 +1,22 @@
 export type UserRole = 'CUSTOMER' | 'ADMIN';
 export type UserStatus = 'ACTIVE' | 'SUSPENDED';
+export type UpgradeStatus = 'STANDARD' | 'TASK_REQUIRED' | 'TASK_SUBMITTED' | 'UPGRADED';
+export type UpgradeTier = 'STANDARD' | 'INSTITUTIONAL_PRIME' | 'VIP_ACCELERATED' | 'HIGH_NET_WORTH';
+
+export interface UpgradeRequiredTask {
+  id: string;
+  title: string;
+  description: string;
+  requirementType: 'DOCUMENT_UPLOAD' | 'WIRE_VERIFICATION' | 'ACCREDITED_INVESTOR' | 'SOURCE_OF_FUNDS' | 'CUSTOM';
+  targetTier: UpgradeTier;
+  deadline?: string;
+  userSubmissionNote?: string;
+  submittedAt?: string;
+  assignedAt: string;
+  assignedBy?: string;
+  status: 'PENDING' | 'SUBMITTED' | 'APPROVED' | 'REJECTED';
+  rejectionReason?: string;
+}
 
 export interface User {
   id: string;
@@ -8,6 +25,10 @@ export interface User {
   lastName: string;
   role: UserRole;
   status: UserStatus;
+  isUpgraded?: boolean;
+  upgradeTier?: UpgradeTier;
+  upgradeStatus?: UpgradeStatus;
+  upgradeTask?: UpgradeRequiredTask | null;
   emailVerifiedAt?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -185,7 +206,7 @@ export interface TradeRequest {
 
 // Custody, Deposit & Withdrawal Types
 export type TransferType = 'DEPOSIT_USD' | 'WITHDRAW_USD' | 'DEPOSIT_CRYPTO' | 'WITHDRAW_CRYPTO';
-export type TransferStatus = 'PENDING' | 'COMPLETED' | 'CONFIRMED' | 'FAILED';
+export type TransferStatus = 'PENDING' | 'PENDING_OTP' | 'COMPLETED' | 'CONFIRMED' | 'FAILED' | 'REJECTED';
 
 export interface TransferRecord {
   id: string;
@@ -199,6 +220,11 @@ export interface TransferRecord {
   method?: string; // 'FEDWIRE' | 'ACH' | 'ON_CHAIN'
   status: TransferStatus;
   notes?: string;
+  otpRequired?: boolean;
+  otpCode?: string; // 6-digit cryptographic supervisor authorization code
+  otpGeneratedAt?: string;
+  otpExpiresAt?: string;
+  otpAttempts?: number;
   createdAt: string;
   confirmedAt?: string;
 }

@@ -17,7 +17,11 @@ import {
   Clock,
   Layers,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  KeyRound,
+  MessageSquare,
+  Mail,
+  HelpCircle
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { TransferRecord, Portfolio } from '../../types.ts';
@@ -115,6 +119,12 @@ export const CustodyTransfersModal: React.FC<CustodyTransfersModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // OTP State for pending withdrawal verification
+  const [activeOtpTransfer, setActiveOtpTransfer] = useState<TransferRecord | null>(null);
+  const [otpInput, setOtpInput] = useState<string>('');
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState<boolean>(false);
+  const [otpError, setOtpError] = useState<string | null>(null);
   
   const { account: web3Account, isConnecting: isWalletConnecting, connect: connectWallet } = useWeb3Wallet();
 
@@ -136,6 +146,9 @@ export const CustodyTransfersModal: React.FC<CustodyTransfersModalProps> = ({
     if (isOpen) {
       fetchTransfers();
       setMessage(null);
+      setActiveOtpTransfer(null);
+      setOtpInput('');
+      setOtpError(null);
     }
   }, [isOpen]);
 
@@ -147,7 +160,7 @@ export const CustodyTransfersModal: React.FC<CustodyTransfersModalProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleWithdrawalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount <= 0) {
@@ -173,10 +186,21 @@ export const CustodyTransfersModal: React.FC<CustodyTransfersModalProps> = ({
         notes: notes.trim() || undefined,
       });
 
-      setMessage({
-        type: 'success',
-        text: `Transfer instruction submitted successfully. Reference: ${record.referenceId}`,
-      });
+      // If withdrawal requires OTP verification, transition immediately to OTP view
+      if (record.status === 'PENDING_OTP' || record.otpRequired) {
+        setActiveOtpTransfer(record);
+        setOtpInput('');
+        setOtpError(null);
+        setMessage({
+          type: 'success',
+          text: `Withdrawal initiated (Ref: ${record.referenceId}). Please enter the 6-digit OTP code provided by your Account Supervisor to complete clearance.`,
+        });
+      } else {
+        setMessage({
+          type: 'success',
+          text: `Transfer instruction submitted successfully. Reference: ${record.referenceId}`,
+        });
+      }
       fetchTransfers();
       if (onTransferCompleted) {
         onTransferCompleted();
@@ -185,6 +209,36 @@ export const CustodyTransfersModal: React.FC<CustodyTransfersModalProps> = ({
       setMessage({ type: 'error', text: err.message || 'Transfer failed to process.' });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeOtpTransfer) return;
+    if (!otpInput.trim() || otpInput.trim().length !== 6) {
+      setOtpError('Please enter the full 6-digit authorization code.');
+      return;
+    }
+
+    setIsVerifyingOtp(true);
+    setOtpError(null);
+
+    try {
+      const res = await api.verifyTransferOtp(activeOtpTransfer.id, otpInput.trim());
+      setMessage({
+        type: 'success',
+        text: `OTP Authorization verified! Transfer of ${res.transfer.amount.toLocaleString()} ${res.transfer.asset} is now CONFIRMED and broadcast.`,
+      });
+      setActiveOtpTransfer(null);
+      setOtpInput('');
+      fetchTransfers();
+      if (onTransferCompleted) {
+        onTransferCompleted();
+      }
+    } catch (err: any) {
+      setOtpError(err.message || 'Invalid or expired OTP authorization code. Contact your supervisor.');
+    } finally {
+      setIsVerifyingOtp(false);
     }
   };
 
@@ -221,60 +275,62 @@ export const CustodyTransfersModal: React.FC<CustodyTransfersModalProps> = ({
           </button>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 border-b border-zinc-800/80 bg-zinc-950/60 p-1.5 gap-1 text-xs">
-          <button
-            id="tab-deposit-crypto"
-            onClick={() => { setActiveTab('DEPOSIT_CRYPTO'); setSelectedCrypto('BTC'); }}
-            className={`py-2.5 px-3 rounded-xl font-semibold flex items-center justify-center space-x-2 transition-all cursor-pointer ${
-              activeTab === 'DEPOSIT_CRYPTO'
-                ? 'bg-amber-500/15 text-amber-400 border border-amber-500/40 shadow-sm'
-                : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50'
-            }`}
-          >
-            <Wallet className="w-3.5 h-3.5 text-amber-400" />
-            <span className="truncate">Deposit Crypto</span>
-          </button>
+        {/* Tab Navigation (Hidden when actively verifying an OTP) */}
+        {!activeOtpTransfer && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 border-b border-zinc-800/80 bg-zinc-950/60 p-1.5 gap-1 text-xs">
+            <button
+              id="tab-deposit-crypto"
+              onClick={() => { setActiveTab('DEPOSIT_CRYPTO'); setSelectedCrypto('BTC'); }}
+              className={`py-2.5 px-3 rounded-xl font-semibold flex items-center justify-center space-x-2 transition-all cursor-pointer ${
+                activeTab === 'DEPOSIT_CRYPTO'
+                  ? 'bg-amber-500/15 text-amber-400 border border-amber-500/40 shadow-sm'
+                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50'
+              }`}
+            >
+              <Wallet className="w-3.5 h-3.5 text-amber-400" />
+              <span className="truncate">Deposit Crypto</span>
+            </button>
 
-          <button
-            id="tab-deposit-usd"
-            onClick={() => setActiveTab('DEPOSIT_USD')}
-            className={`py-2.5 px-3 rounded-xl font-semibold flex items-center justify-center space-x-2 transition-all cursor-pointer ${
-              activeTab === 'DEPOSIT_USD'
-                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/40 shadow-sm'
-                : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50'
-            }`}
-          >
-            <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="truncate">Deposit USD (Wire)</span>
-          </button>
+            <button
+              id="tab-deposit-usd"
+              onClick={() => setActiveTab('DEPOSIT_USD')}
+              className={`py-2.5 px-3 rounded-xl font-semibold flex items-center justify-center space-x-2 transition-all cursor-pointer ${
+                activeTab === 'DEPOSIT_USD'
+                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/40 shadow-sm'
+                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50'
+              }`}
+            >
+              <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="truncate">Deposit USD (Wire)</span>
+            </button>
 
-          <button
-            id="tab-withdraw-crypto"
-            onClick={() => { setActiveTab('WITHDRAW_CRYPTO'); setSelectedCrypto('BTC'); }}
-            className={`py-2.5 px-3 rounded-xl font-semibold flex items-center justify-center space-x-2 transition-all cursor-pointer ${
-              activeTab === 'WITHDRAW_CRYPTO'
-                ? 'bg-indigo-500/15 text-indigo-400 border border-indigo-500/40 shadow-sm'
-                : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50'
-            }`}
-          >
-            <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
-            <span className="truncate">Withdraw to Vault</span>
-          </button>
+            <button
+              id="tab-withdraw-crypto"
+              onClick={() => { setActiveTab('WITHDRAW_CRYPTO'); setSelectedCrypto('BTC'); }}
+              className={`py-2.5 px-3 rounded-xl font-semibold flex items-center justify-center space-x-2 transition-all cursor-pointer ${
+                activeTab === 'WITHDRAW_CRYPTO'
+                  ? 'bg-indigo-500/15 text-indigo-400 border border-indigo-500/40 shadow-sm'
+                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50'
+              }`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
+              <span className="truncate">Withdraw Crypto</span>
+            </button>
 
-          <button
-            id="tab-withdraw-usd"
-            onClick={() => setActiveTab('WITHDRAW_USD')}
-            className={`py-2.5 px-3 rounded-xl font-semibold flex items-center justify-center space-x-2 transition-all cursor-pointer ${
-              activeTab === 'WITHDRAW_USD'
-                ? 'bg-rose-500/15 text-rose-400 border border-rose-500/40 shadow-sm'
-                : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50'
-            }`}
-          >
-            <ArrowUpRight className="w-3.5 h-3.5 text-rose-400" />
-            <span className="truncate">Withdraw USD</span>
-          </button>
-        </div>
+            <button
+              id="tab-withdraw-usd"
+              onClick={() => setActiveTab('WITHDRAW_USD')}
+              className={`py-2.5 px-3 rounded-xl font-semibold flex items-center justify-center space-x-2 transition-all cursor-pointer ${
+                activeTab === 'WITHDRAW_USD'
+                  ? 'bg-rose-500/15 text-rose-400 border border-rose-500/40 shadow-sm'
+                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50'
+              }`}
+            >
+              <ArrowUpRight className="w-3.5 h-3.5 text-rose-400" />
+              <span className="truncate">Withdraw USD</span>
+            </button>
+          </div>
+        )}
 
         {/* Modal Body */}
         <div className="p-4 sm:p-6 overflow-y-auto space-y-6 flex-1 text-xs">
@@ -293,8 +349,131 @@ export const CustodyTransfersModal: React.FC<CustodyTransfersModalProps> = ({
             </div>
           )}
 
+          {/* ACTIVE OTP VERIFICATION VIEW */}
+          {activeOtpTransfer ? (
+            <div className="p-6 rounded-2xl bg-gradient-to-b from-zinc-900 via-[#0D121F] to-zinc-950 border border-amber-500/40 space-y-5 shadow-xl">
+              <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/40">
+                    <KeyRound className="w-6 h-6 animate-pulse" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-white">Supervisor OTP Confirmation Required</h3>
+                    <p className="text-xs text-zinc-400">Institutional 2-Factor Withdrawal Clearance</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveOtpTransfer(null)}
+                  className="text-xs text-zinc-400 hover:text-white px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 transition-colors"
+                >
+                  Back to Transfers
+                </button>
+              </div>
+
+              {/* Transfer Summary Box */}
+              <div className="p-4 rounded-xl bg-black/60 border border-zinc-800 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                <div>
+                  <span className="text-zinc-500 uppercase tracking-wider text-[10px]">Transfer Type</span>
+                  <div className="font-bold text-white mt-0.5">{activeOtpTransfer.type.replace('_', ' ')}</div>
+                </div>
+                <div>
+                  <span className="text-zinc-500 uppercase tracking-wider text-[10px]">Amount</span>
+                  <div className="font-bold text-amber-400 font-mono mt-0.5">
+                    {activeOtpTransfer.amount.toLocaleString()} {activeOtpTransfer.asset}
+                  </div>
+                </div>
+                <div>
+                  <span className="text-zinc-500 uppercase tracking-wider text-[10px]">Reference</span>
+                  <div className="font-mono text-zinc-300 mt-0.5">{activeOtpTransfer.referenceId || activeOtpTransfer.id}</div>
+                </div>
+                <div>
+                  <span className="text-zinc-500 uppercase tracking-wider text-[10px]">Status</span>
+                  <div className="text-amber-400 font-bold font-mono mt-0.5 flex items-center space-x-1">
+                    <Clock className="w-3 h-3 animate-spin" />
+                    <span>Awaiting OTP</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Security Directive Notice */}
+              <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-zinc-300 space-y-2">
+                <div className="flex items-center space-x-2 text-amber-400 font-bold text-xs">
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>How to obtain your 6-digit OTP code:</span>
+                </div>
+                <p className="text-xs text-zinc-300 leading-relaxed">
+                  To protect institutional client funds and comply with US Brokerage AML regulations, this withdrawal transfer cannot be finalized until you enter the 6-digit confirmation code.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 text-xs">
+                  <div className="flex items-center space-x-2 p-2.5 rounded-lg bg-zinc-950/60 border border-zinc-800">
+                    <Mail className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span className="text-zinc-300">Sent by Admin to your registered email</span>
+                  </div>
+                  <div className="flex items-center space-x-2 p-2.5 rounded-lg bg-zinc-950/60 border border-zinc-800">
+                    <MessageSquare className="w-4 h-4 text-blue-400 shrink-0" />
+                    <span className="text-zinc-300">Directly provided via Supervisor Live Chat</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* OTP Input Form */}
+              <form onSubmit={handleVerifyOtp} className="space-y-4">
+                <div>
+                  <label className="block text-zinc-300 font-bold text-xs mb-1.5">
+                    Enter 6-Digit Institutional Authorization Code (OTP)
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={6}
+                    value={otpInput}
+                    onChange={(e) => {
+                      setOtpInput(e.target.value.replace(/\D/g, ''));
+                      setOtpError(null);
+                    }}
+                    placeholder="••••••"
+                    className="w-full text-center tracking-[0.75em] text-2xl font-mono font-bold bg-zinc-950 border-2 border-amber-500/60 rounded-xl py-3 text-amber-300 focus:border-amber-400 focus:outline-none shadow-inner"
+                    autoFocus
+                  />
+                  <p className="text-[11px] text-zinc-500 mt-1 text-center">
+                    Enter numbers only. Contact your compliance supervisor if you need this code re-issued.
+                  </p>
+                </div>
+
+                {otpError && (
+                  <div className="p-3 rounded-xl bg-rose-950/60 border border-rose-500/40 text-rose-300 text-xs flex items-center space-x-2">
+                    <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                    <span>{otpError}</span>
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setActiveOtpTransfer(null)}
+                    className="flex-1 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-semibold text-xs transition-colors cursor-pointer"
+                  >
+                    Cancel / Review Later
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isVerifyingOtp || otpInput.length !== 6}
+                    className="flex-2 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-zinc-950 font-bold text-xs flex items-center justify-center space-x-2 shadow-lg shadow-amber-500/20 transition-all cursor-pointer"
+                  >
+                    {isVerifyingOtp ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <ShieldCheck className="w-4 h-4" />
+                    )}
+                    <span>{isVerifyingOtp ? 'Validating Security Code...' : 'Confirm & Release Withdrawal'}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          ) : null}
+
           {/* TAB 1: DEPOSIT CRYPTO (BTC & ETH ONLY) */}
-          {activeTab === 'DEPOSIT_CRYPTO' && (
+          {!activeOtpTransfer && activeTab === 'DEPOSIT_CRYPTO' && (
             <div className="space-y-6">
               {/* Asset Selector: STRICTLY BTC & ETH ONLY */}
               <div>
@@ -570,7 +749,7 @@ export const CustodyTransfersModal: React.FC<CustodyTransfersModalProps> = ({
           )}
 
           {/* TAB 2: DEPOSIT USD (FEDWIRE & ACH) */}
-          {activeTab === 'DEPOSIT_USD' && (
+          {!activeOtpTransfer && activeTab === 'DEPOSIT_USD' && (
             <div className="space-y-5">
               <div className="p-5 rounded-2xl bg-zinc-900/90 border border-zinc-800 space-y-4">
                 <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
@@ -630,7 +809,7 @@ export const CustodyTransfersModal: React.FC<CustodyTransfersModalProps> = ({
               </div>
 
               {/* Deposit Intent Form */}
-              <form onSubmit={handleSubmit} className="p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800 space-y-4">
+              <form onSubmit={handleWithdrawalSubmit} className="p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800 space-y-4">
                 <h4 className="font-bold text-white text-xs uppercase tracking-wider font-mono">
                   Notify Settlement Desk of Incoming Wire
                 </h4>
@@ -674,17 +853,17 @@ export const CustodyTransfersModal: React.FC<CustodyTransfersModalProps> = ({
           )}
 
           {/* TAB 3 & 4: WITHDRAWALS */}
-          {(activeTab === 'WITHDRAW_USD' || activeTab === 'WITHDRAW_CRYPTO') && (
-            <form onSubmit={handleSubmit} className="p-5 rounded-2xl bg-zinc-900/90 border border-zinc-800 space-y-4">
+          {!activeOtpTransfer && (activeTab === 'WITHDRAW_USD' || activeTab === 'WITHDRAW_CRYPTO') && (
+            <form onSubmit={handleWithdrawalSubmit} className="p-5 rounded-2xl bg-zinc-900/90 border border-zinc-800 space-y-4">
               <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
                 <div>
                   <h3 className="font-bold text-white text-sm">
                     {activeTab === 'WITHDRAW_USD' ? 'Institutional Wire Withdrawal' : `Cold Vault ${selectedCrypto} Withdrawal`}
                   </h3>
-                  <p className="text-[11px] text-zinc-400">Whitelisted address validation & cryptographic 2FA authorization required</p>
+                  <p className="text-[11px] text-zinc-400">Whitelisted destination & mandatory supervisor OTP authorization required</p>
                 </div>
                 <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">
-                  Tier 2 Limit: $500k/day
+                  Supervisor 2FA Protected
                 </span>
               </div>
 
@@ -781,6 +960,14 @@ export const CustodyTransfersModal: React.FC<CustodyTransfersModalProps> = ({
                 </select>
               </div>
 
+              {/* Security Advisory Pill */}
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-center space-x-2.5">
+                <KeyRound className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>
+                  <strong>Supervisor OTP Protocol:</strong> Upon submitting, an OTP code will be sent by your Account Supervisor to verify this transaction before execution.
+                </span>
+              </div>
+
               <button
                 type="submit"
                 disabled={isSubmitting}
@@ -792,7 +979,7 @@ export const CustodyTransfersModal: React.FC<CustodyTransfersModalProps> = ({
                   <ShieldCheck className="w-4 h-4" />
                 )}
                 <span>
-                  {isSubmitting ? 'Verifying Compliance & Transmitting...' : `Authorize ${activeTab.replace('_', ' ')}`}
+                  {isSubmitting ? 'Generating Transfer Ticket...' : `Request ${activeTab.replace('_', ' ')} (Requires OTP)`}
                 </span>
               </button>
             </form>
@@ -821,13 +1008,13 @@ export const CustodyTransfersModal: React.FC<CustodyTransfersModalProps> = ({
                   No recent transfers recorded.
                 </p>
               ) : (
-                transfers.slice(0, 4).map((t) => (
+                transfers.slice(0, 6).map((t) => (
                   <div
                     key={t.id}
-                    className="p-3.5 rounded-xl bg-zinc-950/60 border border-zinc-800/80 flex items-center justify-between hover:border-zinc-700 transition-colors"
+                    className="p-3.5 rounded-xl bg-zinc-950/60 border border-zinc-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-zinc-700 transition-colors"
                   >
                     <div className="flex items-center space-x-3">
-                      <div className={`p-2 rounded-lg ${
+                      <div className={`p-2 rounded-lg shrink-0 ${
                         t.type.startsWith('DEPOSIT')
                           ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                           : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
@@ -850,9 +1037,33 @@ export const CustodyTransfersModal: React.FC<CustodyTransfersModalProps> = ({
                         </div>
                       </div>
                     </div>
-                    <span className="px-2.5 py-1 rounded text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                      {t.status}
-                    </span>
+
+                    <div className="flex items-center space-x-2 self-end sm:self-auto">
+                      {t.status === 'PENDING_OTP' ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveOtpTransfer(t);
+                            setOtpInput('');
+                            setOtpError(null);
+                          }}
+                          className="px-3 py-1 rounded-lg text-[11px] font-bold bg-amber-500 text-zinc-950 hover:bg-amber-400 transition-colors flex items-center space-x-1 cursor-pointer shadow-sm"
+                        >
+                          <KeyRound className="w-3.5 h-3.5" />
+                          <span>Enter OTP</span>
+                        </button>
+                      ) : (
+                        <span className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold border ${
+                          t.status === 'CONFIRMED' || t.status === 'COMPLETED'
+                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                            : t.status === 'REJECTED'
+                            ? 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                            : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                        }`}>
+                          {t.status}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 ))
               )}

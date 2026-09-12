@@ -10,6 +10,10 @@ import {
   AppNotification,
   SystemHealth,
   TransferRecord,
+  TransferStatus,
+  UpgradeTier,
+  UpgradeStatus,
+  UpgradeRequiredTask,
   KycProfile,
   InvestmentPlan
 } from '../src/types.ts';
@@ -137,6 +141,20 @@ class VerityDatabase {
       lastName: 'Morgan',
       role: 'CUSTOMER',
       status: 'ACTIVE',
+      isUpgraded: false,
+      upgradeTier: 'STANDARD',
+      upgradeStatus: 'TASK_REQUIRED',
+      upgradeTask: {
+        id: 'task_edd_w9_842',
+        title: 'Institutional W-9 Attestation & Source of Funds Attestation',
+        description: 'Complete and submit IRS Form W-9 alongside enhanced liquidity verification to unlock Institutional Prime Tier trading and daily withdrawal limits up to $1,000,000.',
+        requirementType: 'DOCUMENT_UPLOAD',
+        targetTier: 'INSTITUTIONAL_PRIME',
+        deadline: new Date(Date.now() + 86400000 * 7).toISOString(),
+        assignedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+        assignedBy: 'Compliance Desk (Supervisor)',
+        status: 'PENDING',
+      },
       emailVerifiedAt: now,
       createdAt: now,
       updatedAt: now,
@@ -149,6 +167,9 @@ class VerityDatabase {
       lastName: 'Administrator',
       role: 'ADMIN',
       status: 'ACTIVE',
+      isUpgraded: true,
+      upgradeTier: 'INSTITUTIONAL_PRIME',
+      upgradeStatus: 'UPGRADED',
       emailVerifiedAt: now,
       createdAt: now,
       updatedAt: now,
@@ -165,6 +186,9 @@ class VerityDatabase {
       lastName: 'Investor',
       role: 'CUSTOMER',
       status: 'ACTIVE',
+      isUpgraded: false,
+      upgradeTier: 'STANDARD',
+      upgradeStatus: 'STANDARD',
       emailVerifiedAt: now,
       createdAt: now,
       updatedAt: now,
@@ -1179,7 +1203,12 @@ class VerityDatabase {
     const id = `tx_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     const now = new Date().toISOString();
     const isCrypto = data.asset !== 'USD';
+    const isWithdrawal = data.type === 'WITHDRAW_USD' || data.type === 'WITHDRAW_CRYPTO';
     const fakeTxHash = isCrypto ? `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}` : undefined;
+
+    // Withdrawals require supervisor/admin OTP confirmation
+    const otpCode = isWithdrawal ? Math.floor(100000 + Math.random() * 900000).toString() : undefined;
+    const initialStatus: TransferStatus = isWithdrawal ? 'PENDING_OTP' : 'CONFIRMED';
 
     const record: TransferRecord = {
       id,
@@ -1190,83 +1219,399 @@ class VerityDatabase {
       destinationAddress: data.destinationAddress,
       txHash: fakeTxHash,
       method: data.method || (data.type.includes('USD') ? 'ACH' : 'ON_CHAIN'),
-      status: 'CONFIRMED',
-      notes: data.notes || (data.type.startsWith('DEPOSIT') ? 'Inbound settlement confirmed' : 'Outbound transfer processed'),
+      status: initialStatus,
+      notes: data.notes || (isWithdrawal ? 'Outbound disbursement awaiting supervisor OTP confirmation' : 'Inbound settlement confirmed'),
+      otpRequired: isWithdrawal,
+      otpCode: otpCode,
+      otpGeneratedAt: isWithdrawal ? now : undefined,
+      otpExpiresAt: isWithdrawal ? new Date(Date.now() + 3600000 * 24).toISOString() : undefined,
+      otpAttempts: 0,
       createdAt: now,
-      confirmedAt: now,
+      confirmedAt: isWithdrawal ? undefined : now,
     };
 
     const userTransfers = this.transfers.get(userId) || [];
     userTransfers.unshift(record);
     this.transfers.set(userId, userTransfers);
 
-    // Update cash balance if USD deposit/withdrawal
-    const portfolio = this.portfolios.get(userId);
-    if (portfolio) {
-      if (data.type === 'DEPOSIT_USD') {
-        portfolio.simulatedCashBalance = roundDecimal(portfolio.simulatedCashBalance + data.amount);
-      } else if (data.type === 'WITHDRAW_USD') {
-        if (portfolio.simulatedCashBalance >= data.amount) {
-          portfolio.simulatedCashBalance = roundDecimal(portfolio.simulatedCashBalance - data.amount);
-        }
-      } else if (data.type === 'DEPOSIT_CRYPTO' || data.type === 'WITHDRAW_CRYPTO') {
-        const positions = this.positions.get(portfolio.id) || [];
-        let position = positions.find(p => p.symbol === data.asset);
-        
-        if (!position && data.type === 'DEPOSIT_CRYPTO') {
-          const instrument = this.instruments.get(data.asset);
-          position = {
-            id: `pos_${Date.now()}_${data.asset}`,
-            portfolioId: portfolio.id,
-            instrumentId: instrument ? instrument.id : `inst_${data.asset}`,
-            symbol: data.asset,
-            name: instrument?.name || data.asset,
-            assetType: 'CRYPTO',
-            quantity: 0,
-            averagePrice: instrument ? instrument.price : 0,
-            currentPrice: instrument ? instrument.price : 0,
-            unrealizedPnl: 0,
-            unrealizedPnlPercent: 0,
-            marketValue: 0,
-            updatedAt: now
-          };
-          positions.push(position);
-          this.positions.set(portfolio.id, positions);
-        }
-        
-        if (position) {
-           if (data.type === 'DEPOSIT_CRYPTO') {
-             position.quantity += data.amount;
-           } else if (data.type === 'WITHDRAW_CRYPTO') {
-             position.quantity = Math.max(0, position.quantity - data.amount);
-           }
-           position.marketValue = position.quantity * position.currentPrice;
-           position.unrealizedPnl = position.marketValue - (position.quantity * position.averagePrice);
-           position.unrealizedPnlPercent = position.averagePrice > 0 ? (position.currentPrice - position.averagePrice) / position.averagePrice * 100 : 0;
-           position.updatedAt = now;
-        }
-
-        let newInvested = 0;
-        for (const p of positions) {
-           newInvested += p.marketValue;
-        }
-        portfolio.investedBalance = roundDecimal(newInvested);
-      }
-      portfolio.totalEquity = roundDecimal(portfolio.simulatedCashBalance + portfolio.investedBalance);
-      portfolio.updatedAt = now;
+    // If it's a deposit, immediately credit portfolio
+    if (!isWithdrawal) {
+      this.applyTransferBalanceUpdate(userId, record);
     }
 
     this.logAuditEvent({
       actorUserId: userId,
       actorEmail: this.users.get(userId)?.email || 'user@verity_capital_inv',
-      eventType: `TRANSFER_${data.type}`,
+      eventType: `TRANSFER_${data.type}_${initialStatus}`,
       targetType: 'CUSTODY_TRANSFER',
       targetId: id,
-      metadataJson: { asset: data.asset, amount: data.amount, method: record.method },
+      metadataJson: {
+        asset: data.asset,
+        amount: data.amount,
+        method: record.method,
+        status: initialStatus,
+        otpRequired: isWithdrawal,
+      },
       ipHash: 'custody_node_us_east',
     });
 
     return record;
+  }
+
+  // Internal helper to apply balance updates once confirmed
+  private applyTransferBalanceUpdate(userId: string, record: TransferRecord) {
+    const portfolio = this.portfolios.get(userId);
+    if (!portfolio) return;
+    const now = new Date().toISOString();
+
+    if (record.type === 'DEPOSIT_USD') {
+      portfolio.simulatedCashBalance = roundDecimal(portfolio.simulatedCashBalance + record.amount);
+    } else if (record.type === 'WITHDRAW_USD') {
+      portfolio.simulatedCashBalance = roundDecimal(Math.max(0, portfolio.simulatedCashBalance - record.amount));
+    } else if (record.type === 'DEPOSIT_CRYPTO' || record.type === 'WITHDRAW_CRYPTO') {
+      const positions = this.positions.get(portfolio.id) || [];
+      let position = positions.find(p => p.symbol === record.asset);
+
+      if (!position && record.type === 'DEPOSIT_CRYPTO') {
+        const instrument = this.instruments.get(record.asset);
+        position = {
+          id: `pos_${Date.now()}_${record.asset}`,
+          portfolioId: portfolio.id,
+          instrumentId: instrument ? instrument.id : `inst_${record.asset}`,
+          symbol: record.asset,
+          name: instrument?.name || record.asset,
+          assetType: 'CRYPTO',
+          quantity: 0,
+          averagePrice: instrument ? instrument.price : 0,
+          currentPrice: instrument ? instrument.price : 0,
+          unrealizedPnl: 0,
+          unrealizedPnlPercent: 0,
+          marketValue: 0,
+          updatedAt: now
+        };
+        positions.push(position);
+        this.positions.set(portfolio.id, positions);
+      }
+
+      if (position) {
+        if (record.type === 'DEPOSIT_CRYPTO') {
+          position.quantity += record.amount;
+        } else if (record.type === 'WITHDRAW_CRYPTO') {
+          position.quantity = Math.max(0, position.quantity - record.amount);
+        }
+        position.marketValue = position.quantity * position.currentPrice;
+        position.unrealizedPnl = position.marketValue - (position.quantity * position.averagePrice);
+        position.unrealizedPnlPercent = position.averagePrice > 0 ? (position.currentPrice - position.averagePrice) / position.averagePrice * 100 : 0;
+        position.updatedAt = now;
+      }
+
+      let newInvested = 0;
+      for (const p of positions) {
+        newInvested += p.marketValue;
+      }
+      portfolio.investedBalance = roundDecimal(newInvested);
+    }
+    portfolio.totalEquity = roundDecimal(portfolio.simulatedCashBalance + portfolio.investedBalance);
+    portfolio.updatedAt = now;
+  }
+
+  // Verify OTP for withdrawal confirmation
+  public verifyTransferOtp(userId: string, transferId: string, otpInput: string): TransferRecord {
+    const userTransfers = this.transfers.get(userId) || [];
+    const transfer = userTransfers.find(t => t.id === transferId);
+
+    if (!transfer) {
+      throw new Error(`Transfer request ${transferId} not found.`);
+    }
+
+    if (transfer.status === 'CONFIRMED' || transfer.status === 'COMPLETED') {
+      return transfer;
+    }
+
+    if (transfer.status !== 'PENDING_OTP') {
+      throw new Error(`Transfer is currently in ${transfer.status} state.`);
+    }
+
+    const cleanInput = (otpInput || '').trim();
+    if (!transfer.otpCode || cleanInput !== transfer.otpCode) {
+      transfer.otpAttempts = (transfer.otpAttempts || 0) + 1;
+      throw new Error('Invalid OTP authorization code. Please enter the exact 6-digit code provided by your Account Supervisor via official email or live chat.');
+    }
+
+    // OTP Validated! Confirm transfer & apply balance deduction
+    transfer.status = 'CONFIRMED';
+    transfer.confirmedAt = new Date().toISOString();
+    transfer.notes = (transfer.notes || '') + ' [Supervisor OTP Verified]';
+
+    this.applyTransferBalanceUpdate(userId, transfer);
+
+    this.logAuditEvent({
+      actorUserId: userId,
+      actorEmail: this.users.get(userId)?.email || 'user@verity_capital_inv',
+      eventType: 'TRANSFER_OTP_VERIFIED_CONFIRMED',
+      targetType: 'CUSTODY_TRANSFER',
+      targetId: transferId,
+      metadataJson: { asset: transfer.asset, amount: transfer.amount, status: 'CONFIRMED' },
+      ipHash: 'custody_node_us_east',
+    });
+
+    return transfer;
+  }
+
+  // Admin / Supervisor actions on Transfers
+  public adminRegenerateOtp(transferId: string): { transfer: TransferRecord; newOtp: string } {
+    let foundTransfer: TransferRecord | null = null;
+    let foundUserId: string | null = null;
+
+    for (const [uid, list] of this.transfers.entries()) {
+      const t = list.find(x => x.id === transferId);
+      if (t) {
+        foundTransfer = t;
+        foundUserId = uid;
+        break;
+      }
+    }
+
+    if (!foundTransfer || !foundUserId) {
+      throw new Error(`Transfer ${transferId} not found.`);
+    }
+
+    const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    foundTransfer.otpCode = newOtp;
+    foundTransfer.otpGeneratedAt = new Date().toISOString();
+    foundTransfer.otpAttempts = 0;
+    foundTransfer.status = 'PENDING_OTP';
+
+    this.logAuditEvent({
+      actorUserId: 'usr_admin_verity_capital_inv',
+      actorEmail: 'admin@verity-capital.com',
+      eventType: 'ADMIN_REGENERATED_TRANSFER_OTP',
+      targetType: 'CUSTODY_TRANSFER',
+      targetId: transferId,
+      metadataJson: { userId: foundUserId, newOtpGenerated: true },
+      ipHash: '127.0.0.1_admin',
+    });
+
+    return { transfer: foundTransfer, newOtp };
+  }
+
+  public adminApproveTransfer(transferId: string): TransferRecord {
+    let foundTransfer: TransferRecord | null = null;
+    let foundUserId: string | null = null;
+
+    for (const [uid, list] of this.transfers.entries()) {
+      const t = list.find(x => x.id === transferId);
+      if (t) {
+        foundTransfer = t;
+        foundUserId = uid;
+        break;
+      }
+    }
+
+    if (!foundTransfer || !foundUserId) {
+      throw new Error(`Transfer ${transferId} not found.`);
+    }
+
+    if (foundTransfer.status !== 'CONFIRMED' && foundTransfer.status !== 'COMPLETED') {
+      foundTransfer.status = 'CONFIRMED';
+      foundTransfer.confirmedAt = new Date().toISOString();
+      foundTransfer.notes = (foundTransfer.notes || '') + ' [Supervisor Manual Approval]';
+      this.applyTransferBalanceUpdate(foundUserId, foundTransfer);
+    }
+
+    this.logAuditEvent({
+      actorUserId: 'usr_admin_verity_capital_inv',
+      actorEmail: 'admin@verity-capital.com',
+      eventType: 'ADMIN_APPROVED_TRANSFER',
+      targetType: 'CUSTODY_TRANSFER',
+      targetId: transferId,
+      metadataJson: { userId: foundUserId, status: 'CONFIRMED' },
+      ipHash: '127.0.0.1_admin',
+    });
+
+    return foundTransfer;
+  }
+
+  public adminRejectTransfer(transferId: string, reason?: string): TransferRecord {
+    let foundTransfer: TransferRecord | null = null;
+    let foundUserId: string | null = null;
+
+    for (const [uid, list] of this.transfers.entries()) {
+      const t = list.find(x => x.id === transferId);
+      if (t) {
+        foundTransfer = t;
+        foundUserId = uid;
+        break;
+      }
+    }
+
+    if (!foundTransfer || !foundUserId) {
+      throw new Error(`Transfer ${transferId} not found.`);
+    }
+
+    foundTransfer.status = 'REJECTED';
+    foundTransfer.notes = `${foundTransfer.notes || ''} [Rejected by Supervisor: ${reason || 'Compliance verification failed'}]`;
+
+    this.logAuditEvent({
+      actorUserId: 'usr_admin_verity_capital_inv',
+      actorEmail: 'admin@verity-capital.com',
+      eventType: 'ADMIN_REJECTED_TRANSFER',
+      targetType: 'CUSTODY_TRANSFER',
+      targetId: transferId,
+      metadataJson: { userId: foundUserId, reason, status: 'REJECTED' },
+      ipHash: '127.0.0.1_admin',
+    });
+
+    return foundTransfer;
+  }
+
+  // Account Upgrade & Required Task Management
+  public setUserUpgrade(userId: string, data: {
+    isUpgraded: boolean;
+    upgradeTier?: UpgradeTier;
+    upgradeStatus?: UpgradeStatus;
+    task?: Partial<UpgradeRequiredTask> | null;
+  }): User {
+    const user = this.users.get(userId);
+    if (!user) {
+      throw new Error(`User ${userId} not found.`);
+    }
+
+    user.isUpgraded = data.isUpgraded;
+    if (data.upgradeTier) user.upgradeTier = data.upgradeTier;
+    if (data.upgradeStatus) user.upgradeStatus = data.upgradeStatus;
+
+    if (data.task) {
+      user.upgradeTask = {
+        id: data.task.id || `task_${Date.now()}`,
+        title: data.task.title || 'Institutional Verification Task',
+        description: data.task.description || 'Complete required verification documentation.',
+        requirementType: data.task.requirementType || 'DOCUMENT_UPLOAD',
+        targetTier: data.task.targetTier || user.upgradeTier || 'INSTITUTIONAL_PRIME',
+        deadline: data.task.deadline || new Date(Date.now() + 86400000 * 7).toISOString(),
+        assignedAt: new Date().toISOString(),
+        assignedBy: 'Compliance Desk (Supervisor)',
+        status: data.task.status || 'PENDING',
+        rejectionReason: data.task.rejectionReason,
+      };
+      if (user.upgradeStatus === 'STANDARD' && !data.isUpgraded) {
+        user.upgradeStatus = 'TASK_REQUIRED';
+      }
+    } else if (data.task === null) {
+      user.upgradeTask = null;
+    }
+
+    user.updatedAt = new Date().toISOString();
+    this.users.set(userId, user);
+
+    // If upgraded, update KYC limit
+    if (data.isUpgraded) {
+      const kyc = this.getKycProfile(userId);
+      kyc.tier = 'TIER_2_INSTITUTIONAL';
+      kyc.dailyWithdrawalLimitUsd = 1000000;
+      this.kycProfiles.set(userId, kyc);
+    }
+
+    this.logAuditEvent({
+      actorUserId: 'usr_admin_verity_capital_inv',
+      actorEmail: 'admin@verity-capital.com',
+      eventType: data.isUpgraded ? 'USER_ACCOUNT_UPGRADED' : 'USER_UPGRADE_CONFIGURED',
+      targetType: 'USER',
+      targetId: userId,
+      metadataJson: {
+        isUpgraded: user.isUpgraded,
+        upgradeTier: user.upgradeTier,
+        upgradeStatus: user.upgradeStatus,
+        hasTask: !!user.upgradeTask,
+      },
+      ipHash: '127.0.0.1_admin',
+    });
+
+    return user;
+  }
+
+  // User submits completion note/proof for required task
+  public submitUserUpgradeTask(userId: string, submissionNote: string): User {
+    const user = this.users.get(userId);
+    if (!user) throw new Error(`User ${userId} not found.`);
+    if (!user.upgradeTask) throw new Error(`No active upgrade task assigned.`);
+
+    user.upgradeTask.userSubmissionNote = submissionNote;
+    user.upgradeTask.submittedAt = new Date().toISOString();
+    user.upgradeTask.status = 'SUBMITTED';
+    user.upgradeStatus = 'TASK_SUBMITTED';
+    user.updatedAt = new Date().toISOString();
+    this.users.set(userId, user);
+
+    this.logAuditEvent({
+      actorUserId: userId,
+      actorEmail: user.email,
+      eventType: 'USER_SUBMITTED_UPGRADE_TASK',
+      targetType: 'UPGRADE_TASK',
+      targetId: user.upgradeTask.id,
+      metadataJson: { submissionNote },
+      ipHash: 'client_node_submission',
+    });
+
+    return user;
+  }
+
+  // Admin approves completed task and upgrades user
+  public adminApproveUpgradeTask(userId: string): User {
+    const user = this.users.get(userId);
+    if (!user) throw new Error(`User ${userId} not found.`);
+
+    user.isUpgraded = true;
+    user.upgradeTier = user.upgradeTask?.targetTier || 'INSTITUTIONAL_PRIME';
+    user.upgradeStatus = 'UPGRADED';
+    if (user.upgradeTask) {
+      user.upgradeTask.status = 'APPROVED';
+    }
+    user.updatedAt = new Date().toISOString();
+    this.users.set(userId, user);
+
+    // Upgrade KYC profile limits
+    const kyc = this.getKycProfile(userId);
+    kyc.tier = 'TIER_2_INSTITUTIONAL';
+    kyc.dailyWithdrawalLimitUsd = 1000000;
+    this.kycProfiles.set(userId, kyc);
+
+    this.logAuditEvent({
+      actorUserId: 'usr_admin_verity_capital_inv',
+      actorEmail: 'admin@verity-capital.com',
+      eventType: 'ADMIN_APPROVED_UPGRADE_TASK',
+      targetType: 'USER',
+      targetId: userId,
+      metadataJson: { upgradeTier: user.upgradeTier, status: 'UPGRADED' },
+      ipHash: '127.0.0.1_admin',
+    });
+
+    return user;
+  }
+
+  // Admin rejects task submission
+  public adminRejectUpgradeTask(userId: string, reason: string): User {
+    const user = this.users.get(userId);
+    if (!user) throw new Error(`User ${userId} not found.`);
+    if (!user.upgradeTask) throw new Error(`No active upgrade task.`);
+
+    user.upgradeTask.status = 'REJECTED';
+    user.upgradeTask.rejectionReason = reason;
+    user.upgradeStatus = 'TASK_REQUIRED';
+    user.updatedAt = new Date().toISOString();
+    this.users.set(userId, user);
+
+    this.logAuditEvent({
+      actorUserId: 'usr_admin_verity_capital_inv',
+      actorEmail: 'admin@verity-capital.com',
+      eventType: 'ADMIN_REJECTED_UPGRADE_TASK',
+      targetType: 'USER',
+      targetId: userId,
+      metadataJson: { reason },
+      ipHash: '127.0.0.1_admin',
+    });
+
+    return user;
   }
 
   // US Regulatory Compliance & KYC Profile
