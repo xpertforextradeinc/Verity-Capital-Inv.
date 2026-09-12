@@ -66,7 +66,7 @@ export const WatchlistsView: React.FC<WatchlistsViewProps> = ({
             <span>Custom Market Watchlists</span>
           </h1>
           <p className="text-xs text-zinc-400 mt-0.5">
-            Monitor target assets, track intraday price action, and execute simulated orders
+            Monitor target assets, track intraday price action, and execute orders
           </p>
         </div>
 

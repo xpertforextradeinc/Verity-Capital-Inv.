@@ -14,6 +14,7 @@ import {
   TransferRecord
 } from './types.ts';
 import { api } from './services/api.ts';
+import { clientStorageEngine } from './services/clientStorage.ts';
 import { Header } from './components/common/Header.tsx';
 import { TickerBar } from './components/common/TickerBar.tsx';
 import { PublicLayout } from './components/layout/PublicLayout.tsx';
@@ -32,7 +33,6 @@ import { ActivityView } from './components/customer/ActivityView.tsx';
 import { SettingsView } from './components/customer/SettingsView.tsx';
 import { AdminSupervisorView } from './components/admin/AdminSupervisorView.tsx';
 import { AdminLogin } from './components/admin/AdminLogin.tsx';
-import { MediaVaultView } from './components/media/MediaVaultView.tsx';
 import { TradeModal } from './components/customer/TradeModal.tsx';
 import { BrokerDeskAssistant } from './components/customer/BrokerDeskAssistant.tsx';
 import { CustodyTransfersModal } from './components/customer/CustodyTransfersModal.tsx';
@@ -58,12 +58,13 @@ export default function App() {
 
   // Navigation & UI State
   const [currentTab, setCurrentTab] = useState<string>(() => {
-    if (typeof window === 'undefined') return 'home';
+    if (typeof window === 'undefined') return 'dashboard';
     const path = window.location.pathname.replace(/^\//, '');
     if (path === 'open-account') return 'onboarding';
     if (path === 'admin') return 'admin-overview';
     if (path === 'admin/login') return 'admin-login';
-    return path || 'home';
+    if (path === 'home') return 'home';
+    return path || 'dashboard';
   });
   const [selectedInstrument, setSelectedInstrument] = useState<Instrument | null>(null);
   const [isTradeModalOpen, setIsTradeModalOpen] = useState<boolean>(false);
@@ -103,7 +104,16 @@ export default function App() {
 
       // Attempt to load authenticated user data
       try {
-        const currentUser = await api.getCurrentUser();
+        let currentUser = await api.getCurrentUser();
+        if (!currentUser) {
+          try {
+            const demoRes = await api.switchDemo('CUSTOMER');
+            currentUser = demoRes.user;
+          } catch {
+            currentUser = clientStorageEngine.getDemoUser();
+            clientStorageEngine.setCurrentUser(currentUser);
+          }
+        }
         setUser(currentUser);
 
         if (currentUser) {
@@ -125,8 +135,7 @@ export default function App() {
           setTransfers(trs);
         }
       } catch (err) {
-        // Not authenticated
-        setUser(null);
+        console.warn('Session initialization note:', err);
       }
     } catch (err) {
       console.error('Error loading initial Verity-Capital Inv data:', err);
@@ -524,6 +533,10 @@ export default function App() {
   const isPublicTab = publicTabs.includes(currentTab);
   const isAdminTab = currentTab.startsWith('admin');
   const setPublicRoute = (tab: string) => {
+    if (tab === 'dashboard' || tab === 'portfolio') {
+      navigateApp(tab);
+      return;
+    }
     const route = tab === 'home' ? '/' : `/${tab === 'onboarding' ? 'open-account' : tab}`;
     window.history.pushState({}, '', route);
     setCurrentTab(tab);
@@ -689,78 +702,12 @@ export default function App() {
       );
     }
 
-    if (!user) {
-      return (
-        <div className="flex flex-col items-center justify-center py-20 px-4 text-center max-w-md mx-auto animate-in fade-in duration-300">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mb-5">
-            <Lock className="w-6 h-6" />
-          </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Authentication Required</h2>
-          <p className="text-zinc-400 text-sm mb-6 leading-relaxed">
-            Sign in to access your Verity-Capital Inv portfolio, live market executions, and custody balances.
-          </p>
-
-          {authNotice && (
-            <div className="mb-6 w-full p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs text-left">
-              {authNotice}
-            </div>
-          )}
-
-          <div className="w-full space-y-3">
-            <button
-              type="button"
-              id="auth-required-google-btn"
-              onClick={async () => {
-                setAuthNotice(null);
-                try {
-                  const { error } = await signInWithGoogleSupabase('/dashboard');
-                  if (error) throw error;
-                } catch (err: any) {
-                  setAuthNotice(err?.message || 'Google sign in failed');
-                }
-              }}
-              className="w-full flex items-center justify-center gap-3 border border-white/20 bg-zinc-900/80 hover:bg-zinc-800 hover:border-emerald-400/50 text-white font-semibold py-3 px-4 rounded-xl transition-all cursor-pointer shadow-sm"
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-              </svg>
-              <span>Continue with Google</span>
-            </button>
-
-            <button
-              onClick={() => handleOpenAuth('login')}
-              className="w-full py-3 px-4 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold rounded-xl transition-colors cursor-pointer"
-            >
-              Sign In with Credentials
-            </button>
-
-            <button
-              onClick={async () => {
-                try {
-                  const res = await api.login('client@verity-capital.com', 'demo-bypass');
-                  setUser(res.user);
-                  await fetchData();
-                } catch {
-                  // ignore
-                }
-              }}
-              className="w-full py-2.5 px-4 bg-zinc-900/60 hover:bg-zinc-800 text-zinc-400 hover:text-white text-xs font-medium rounded-xl border border-zinc-800 transition-colors cursor-pointer"
-            >
-              Explore with Demo Account
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    // Authenticated Views
+    // Main Application Views
     switch (currentTab) {
       case 'dashboard':
         return (
           <DashboardView
+            user={user}
             portfolio={portfolio}
             positions={positions}
             orders={orders}
@@ -770,16 +717,27 @@ export default function App() {
             onOpenSpecs={handleOpenSpecs}
             onNavigateTab={setCurrentTab}
             onKycOpen={handleOpenKyc}
+            onOpenAuth={handleOpenAuth}
+            onGoogleSignIn={async () => {
+              const { error } = await signInWithGoogleSupabase('/dashboard');
+              if (error) throw error;
+            }}
           />
         );
       case 'portfolio':
         return (
           <PortfolioView
+            user={user}
             portfolio={portfolio}
             positions={positions}
             instruments={instruments}
             onOpenTrade={handleOpenTrade}
             onOpenCustody={handleOpenCustody}
+            onOpenAuth={handleOpenAuth}
+            onGoogleSignIn={async () => {
+              const { error } = await signInWithGoogleSupabase('/dashboard');
+              if (error) throw error;
+            }}
           />
         );
       case 'watchlists':
@@ -825,8 +783,6 @@ export default function App() {
         return <ActivityView activity={activity} />;
       case 'settings-profile':
         return <SettingsView user={user} />;
-      case 'media-vault':
-        return <MediaVaultView />;
       default:
         return null;
     }
@@ -836,11 +792,11 @@ export default function App() {
     <>
       {isPublicTab ? (
         <InstitutionalLayout
-          user={null}
-          portfolio={null}
+          user={user}
+          portfolio={portfolio}
           currentTab={currentTab}
           onSelectTab={setPublicRoute}
-          onLogout={() => {}}
+          onLogout={handleLogout}
           onOpenAuth={(mode) => setPublicRoute(mode === 'login' ? 'login' : 'onboarding')}
         >
           {renderContent()}

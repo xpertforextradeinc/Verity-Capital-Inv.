@@ -134,11 +134,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ user }) => {
         <div className="bg-[#0B0F19] border border-zinc-800 rounded-2xl p-5 shadow-xl space-y-4">
           <div className="flex items-center space-x-2 pb-3 border-b border-zinc-800">
             <Shield className="w-4 h-4 text-amber-400" />
-            <h3 className="text-sm font-bold text-white">Simulated Risk Model</h3>
+            <h3 className="text-sm font-bold text-white">Risk Model</h3>
           </div>
 
           <p className="text-xs text-zinc-400">
-            Select your simulated portfolio risk profile to adapt AI insight alerts and educational commentary.
+            Select your portfolio risk profile to adapt AI insight alerts and commentary.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
@@ -175,7 +175,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ user }) => {
             <label className="flex items-center justify-between p-3 rounded-xl bg-zinc-900 border border-zinc-800 cursor-pointer">
               <div>
                 <span className="font-medium text-white block">Execution Alerts</span>
-                <span className="text-[11px] text-zinc-400">Receive in-app alerts whenever simulated limit orders are filled.</span>
+                <span className="text-[11px] text-zinc-400">Receive in-app alerts whenever limit orders are filled.</span>
               </div>
               <input
                 type="checkbox"

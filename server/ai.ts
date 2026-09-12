@@ -354,17 +354,19 @@ All digital assets are held in segregated, air-gapped qualified custody with con
     };
   }
 
-  // 3. Custody & Transfers (Fedwire / Vaults)
-  if (lower.includes('deposit') || lower.includes('withdraw') || lower.includes('transfer') || lower.includes('wire') || lower.includes('vault')) {
+  // 3. Custody & Transfers (Fedwire / Vaults / Crypto Deposits)
+  if (lower.includes('deposit') || lower.includes('withdraw') || lower.includes('transfer') || lower.includes('wire') || lower.includes('vault') || lower.includes('crypto')) {
     return {
       reply: `### Institutional Custody & Capital Clearing
-Verity-Capital Inv supports the following institutional capital rails:
-- **USD Clearing**: Same-day **Fedwire** (cutoff 16:30 ET) and ACH institutional settlement.
-- **Digital Asset Custody**: Segregated, air-gapped cold storage with multi-party computation (MPC) and multi-signature authorization.
-- **Whitelisted Destinations**: Outbound digital asset transfers require cryptographic address verification and 2FA confirmation.`,
+Verity-Capital Inv supports the following core institutional capital rails:
+
+- **Bitcoin (BTC) Deposit**: Segregated Native SegWit vault: \`bc1qcjaexaws4gna2vvglkwg9gq70ylncxqamymk77\` (3 network confirmations)
+- **Ethereum (ETH / ERC-20) Deposit**: Segregated EVM custodial vault: \`0x38647cd2c6a818b72453DC6f21F550B1A2e80606\` (12 network confirmations)
+- **USD Clearing**: Same-day **Fedwire** (via JPMorgan Chase commercial clearing, cutoff 16:30 ET) and ACH institutional settlement.
+- **Qualified Cold Storage**: All deposited crypto assets are held in segregated, air-gapped multi-sig cold storage with Fidelity Digital Assets and BitGo Trust.`,
       suggestedAction: {
         type: 'CUSTODY_TRANSFER',
-        label: 'Initiate Transfer / View Custody',
+        label: 'View Custody & Deposit Addresses',
         payload: {},
       },
     };

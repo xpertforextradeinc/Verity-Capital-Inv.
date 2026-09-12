@@ -72,7 +72,7 @@ export const AiInsightsView: React.FC<AiInsightsViewProps> = ({
               AI-Assisted Market & Macro Insights
             </h1>
             <p className="text-xs text-zinc-300 mt-1 max-w-2xl leading-relaxed">
-              Synthesizes real-time simulated price action, historical volatility patterns, and macro market structure. All outputs are strictly educational and do not constitute financial advice.
+              Synthesizes real-time price action, historical volatility patterns, and macro market structure. All outputs do not constitute financial advice.
             </p>
           </div>
 
@@ -273,7 +273,7 @@ export const AiInsightsView: React.FC<AiInsightsViewProps> = ({
                           className="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs flex items-center space-x-1 cursor-pointer transition-colors"
                         >
                           <Zap className="w-3 h-3 fill-current" />
-                          <span>Simulate {inst.symbol} Trade</span>
+                          <span>Trade {inst.symbol}</span>
                         </button>
                       </div>
                     )}

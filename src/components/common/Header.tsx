@@ -18,9 +18,11 @@ import {
   ShieldAlert,
   ChevronDown,
   Info,
-  Box
+  Box,
+  Wallet
 } from 'lucide-react';
 import { User, Portfolio, AppNotification, Instrument } from '../../types.ts';
+import { useWeb3Wallet } from '../../hooks/useWeb3Wallet.ts';
 
 interface HeaderProps {
   user: User | null;
@@ -51,6 +53,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const { account: web3Account, isConnecting, connect, disconnect } = useWeb3Wallet();
 
   const unreadCount = notifications.filter((n) => !n.readAt).length;
   const isAdmin = user?.role === 'ADMIN';
@@ -200,17 +203,6 @@ export const Header: React.FC<HeaderProps> = ({
                       <Bookmark className="w-3.5 h-3.5" />
                       <span>Watchlists</span>
                     </button>
-                    <button
-                      onClick={() => onSelectTab('media-vault')}
-                      className={`px-3 py-1.5 rounded-lg transition-colors flex items-center space-x-1.5 cursor-pointer ${
-                        currentTab === 'media-vault'
-                          ? 'bg-blue-950/40 text-blue-300 border border-blue-500/30 font-semibold'
-                          : 'text-zinc-400 hover:text-blue-300 hover:bg-zinc-800/50'
-                      }`}
-                    >
-                      <Box className="w-3.5 h-3.5 text-blue-400" />
-                      <span>Drive</span>
-                    </button>
                   </>
                 )}
               </nav>
@@ -234,15 +226,6 @@ export const Header: React.FC<HeaderProps> = ({
                   }`}
                 >
                   Markets
-                </button>
-                <button
-                  onClick={() => onSelectTab('media-vault')}
-                  className={`hover:text-blue-300 transition-colors cursor-pointer flex items-center space-x-1 ${
-                    currentTab === 'media-vault' ? 'text-blue-400 font-semibold' : ''
-                  }`}
-                >
-                    <Box className="w-3.5 h-3.5 text-blue-400" />
-                  <span>Drive Sync</span>
                 </button>
                 <button
                   onClick={() => onSelectTab('features')}
@@ -269,25 +252,39 @@ export const Header: React.FC<HeaderProps> = ({
             {/* If Authenticated: Balance badge, Quick Trade, Notifications */}
             {user ? (
               <>
-                {/* Simulated Balance Pill */}
+                {/* Balance Pill */}
                 {portfolio && !isAdmin && (
                   <div className="hidden md:flex items-center bg-zinc-900/80 border border-zinc-800 rounded-xl px-3 py-1.5 text-right">
                     <div>
                       <div className="text-[10px] uppercase tracking-wider text-zinc-400 font-medium flex items-center justify-end space-x-1">
-                        <span>Simulated Equity</span>
+                        <span>Account Balance</span>
                       </div>
                       <div className="font-mono text-sm font-bold text-white">
                         ${portfolio.totalEquity.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
                     </div>
-                    <button
-                      onClick={onResetPortfolio}
-                      title="Reset simulated portfolio to $100,000 default"
-                      className="ml-2.5 p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-amber-400 transition-colors cursor-pointer"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                    </button>
                   </div>
+                )}
+
+                {/* Web3 Wallet Connection Button */}
+                {web3Account ? (
+                  <button
+                    onClick={disconnect}
+                    className="hidden sm:flex items-center bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/80 rounded-xl px-3 py-2 text-xs font-mono font-bold text-cyan-400 transition-colors shadow-sm"
+                    title="Disconnect Wallet"
+                  >
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 mr-2 animate-pulse"></div>
+                    {web3Account.slice(0, 6)}...{web3Account.slice(-4)}
+                  </button>
+                ) : (
+                  <button
+                    onClick={connect}
+                    disabled={isConnecting}
+                    className="hidden sm:flex items-center bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/80 rounded-xl px-3 py-2 text-xs font-semibold text-zinc-300 transition-colors shadow-sm disabled:opacity-50"
+                  >
+                    <Wallet className="w-3.5 h-3.5 mr-1.5 text-cyan-400" />
+                    {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+                  </button>
                 )}
 
                 {/* Quick Trade Button */}
@@ -396,16 +393,6 @@ export const Header: React.FC<HeaderProps> = ({
                         >
                           <Activity className="w-3.5 h-3.5" />
                           <span>Account Activity Log</span>
-                        </button>
-                        <button
-                          onClick={() => {
-                            onSelectTab('media-vault');
-                            setShowUserMenu(false);
-                          }}
-                          className="w-full px-3 py-1.5 text-left text-blue-300 hover:bg-blue-950/40 flex items-center space-x-2 cursor-pointer"
-                        >
-                          <Box className="w-3.5 h-3.5 text-blue-400" />
-                          <span>3D Asset Vault</span>
                         </button>
                         {isAdmin && (
                           <button

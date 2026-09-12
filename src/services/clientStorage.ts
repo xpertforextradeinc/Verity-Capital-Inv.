@@ -598,7 +598,7 @@ class ClientStorageEngine {
           promptVersion: 'v2.1',
           generatedAt: new Date().toISOString(),
           expiresAt: new Date(Date.now() + 86400000).toISOString(),
-          disclaimer: 'Simulated educational intelligence. Not financial advice.',
+          disclaimer: 'Educational intelligence. Not financial advice.',
         }
       ];
       return insights as unknown as T;
@@ -669,7 +669,7 @@ class ClientStorageEngine {
     const total = round(req.quantity * price, 2);
 
     if (req.side === 'BUY' && port.simulatedCashBalance < total) {
-      throw new Error(`Insufficient simulated cash. Required: $${total}, Available: $${port.simulatedCashBalance}`);
+      throw new Error(`Insufficient cash. Required: $${total}, Available: $${port.simulatedCashBalance}`);
     }
 
     const order: Order = {

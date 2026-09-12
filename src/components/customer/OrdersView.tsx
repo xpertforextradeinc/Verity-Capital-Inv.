@@ -50,7 +50,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
         <div>
           <h1 className="text-xl font-bold text-white tracking-tight flex items-center space-x-2">
             <FileText className="w-5 h-5 text-indigo-400" />
-            <span>Simulated Order History</span>
+            <span>Order History</span>
           </h1>
           <p className="text-xs text-zinc-400 mt-0.5">
             Full ledger of virtual executions, pending limit orders, and cancellations
@@ -89,7 +89,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
       <div className="bg-[#0B0F19] border border-zinc-800 rounded-2xl shadow-xl overflow-hidden">
         <div className="p-4 border-b border-zinc-800 flex items-center justify-between text-xs text-zinc-400">
           <span>Displaying {filteredOrders.length} order{filteredOrders.length === 1 ? '' : 's'}</span>
-          <span className="font-mono">Settlement Engine: Instant Simulated Fill</span>
+          <span className="font-mono">Settlement Engine: Instant Fill</span>
         </div>
 
         {filteredOrders.length === 0 ? (

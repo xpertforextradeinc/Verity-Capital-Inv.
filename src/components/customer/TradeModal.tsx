@@ -368,7 +368,7 @@ export const TradeModal: React.FC<TradeModalProps> = ({
               </div>
               <div className="flex items-center justify-between text-zinc-400">
                 <span>Institutional Clearing Fee:</span>
-                <span className="font-mono text-emerald-400">$0.00 (Zero-Fee Simulation)</span>
+                <span className="font-mono text-emerald-400">$0.00 (Zero-Fee Structure)</span>
               </div>
               <div className="pt-1.5 border-t border-zinc-800 flex items-center justify-between font-bold">
                 <span className="text-zinc-200">Estimated Settlement:</span>

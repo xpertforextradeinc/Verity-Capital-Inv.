@@ -156,6 +156,22 @@ class VerityDatabase {
 
     this.users.set(customerUser.id, customerUser);
     this.passwords.set(customerUser.email.toLowerCase(), 'Customer123!');
+    this.passwords.set('client@verity-capital.com', 'demo-bypass');
+
+    const clientUser: User = {
+      id: 'usr_customer_client',
+      email: 'client@verity-capital.com',
+      firstName: 'Institutional',
+      lastName: 'Investor',
+      role: 'CUSTOMER',
+      status: 'ACTIVE',
+      emailVerifiedAt: now,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.users.set(clientUser.id, clientUser);
+    this.passwords.set(clientUser.email.toLowerCase(), 'demo-bypass');
+    this.passwords.set('alex.morgan@example.com', 'demo-bypass');
 
     this.users.set(adminUser.id, adminUser);
     this.passwords.set(adminUser.email.toLowerCase(), 'Admin123!');
@@ -371,6 +387,13 @@ class VerityDatabase {
 
     this.portfolios.set(customerUser.id, customerPortfolio);
     this.positions.set(customerPortfolioId, initialPositions);
+
+    this.portfolios.set(clientUser.id, {
+      ...customerPortfolio,
+      id: 'port_customer_client',
+      userId: clientUser.id,
+    });
+    this.positions.set('port_customer_client', initialPositions);
 
     // 4. Seed Orders for Customer (Crypto Spot Only)
     const ordersList: Order[] = [
@@ -617,7 +640,7 @@ class VerityDatabase {
         userId: customerUser.id,
         type: 'SYSTEM',
         title: 'Welcome to Verity-Capital Inv',
-        body: 'Your paper trading account has been provisioned with $100,000 in simulated USD capital.',
+        body: 'Your account has been provisioned with $100,000 in USD capital.',
         readAt: null,
         createdAt: new Date(Date.now() - 86400000 * 4).toISOString(),
       },
@@ -625,7 +648,7 @@ class VerityDatabase {
         id: 'notif_2',
         userId: customerUser.id,
         type: 'ORDER_EXECUTED',
-        title: 'Simulated Order Filled: NVDA',
+        title: 'Order Filled: NVDA',
         body: 'Bought 80 shares of NVDA at $114.20 ($9,136.00).',
         readAt: null,
         createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
@@ -939,8 +962,8 @@ class VerityDatabase {
       id: `notif_${Date.now()}`,
       userId,
       type: 'SYSTEM',
-      title: deltaAmount >= 0 ? 'Simulated Funds Credited' : 'Simulated Funds Adjusted',
-      body: `An administrator adjusted your virtual cash balance by ${deltaAmount >= 0 ? '+' : ''}$${Math.abs(deltaAmount).toLocaleString()}. Reason: ${reason || 'Administrative adjustment'}`,
+      title: deltaAmount >= 0 ? 'Funds Credited' : 'Funds Adjusted',
+      body: `An administrator adjusted your cash balance by ${deltaAmount >= 0 ? '+' : ''}$${Math.abs(deltaAmount).toLocaleString()}. Reason: ${reason || 'Administrative adjustment'}`,
       readAt: null,
       createdAt: new Date().toISOString(),
     });
@@ -1186,6 +1209,48 @@ class VerityDatabase {
         if (portfolio.simulatedCashBalance >= data.amount) {
           portfolio.simulatedCashBalance = roundDecimal(portfolio.simulatedCashBalance - data.amount);
         }
+      } else if (data.type === 'DEPOSIT_CRYPTO' || data.type === 'WITHDRAW_CRYPTO') {
+        const positions = this.positions.get(portfolio.id) || [];
+        let position = positions.find(p => p.symbol === data.asset);
+        
+        if (!position && data.type === 'DEPOSIT_CRYPTO') {
+          const instrument = this.instruments.get(data.asset);
+          position = {
+            id: `pos_${Date.now()}_${data.asset}`,
+            portfolioId: portfolio.id,
+            instrumentId: instrument ? instrument.id : `inst_${data.asset}`,
+            symbol: data.asset,
+            name: instrument?.name || data.asset,
+            assetType: 'CRYPTO',
+            quantity: 0,
+            averagePrice: instrument ? instrument.price : 0,
+            currentPrice: instrument ? instrument.price : 0,
+            unrealizedPnl: 0,
+            unrealizedPnlPercent: 0,
+            marketValue: 0,
+            updatedAt: now
+          };
+          positions.push(position);
+          this.positions.set(portfolio.id, positions);
+        }
+        
+        if (position) {
+           if (data.type === 'DEPOSIT_CRYPTO') {
+             position.quantity += data.amount;
+           } else if (data.type === 'WITHDRAW_CRYPTO') {
+             position.quantity = Math.max(0, position.quantity - data.amount);
+           }
+           position.marketValue = position.quantity * position.currentPrice;
+           position.unrealizedPnl = position.marketValue - (position.quantity * position.averagePrice);
+           position.unrealizedPnlPercent = position.averagePrice > 0 ? (position.currentPrice - position.averagePrice) / position.averagePrice * 100 : 0;
+           position.updatedAt = now;
+        }
+
+        let newInvested = 0;
+        for (const p of positions) {
+           newInvested += p.marketValue;
+        }
+        portfolio.investedBalance = roundDecimal(newInvested);
       }
       portfolio.totalEquity = roundDecimal(portfolio.simulatedCashBalance + portfolio.investedBalance);
       portfolio.updatedAt = now;

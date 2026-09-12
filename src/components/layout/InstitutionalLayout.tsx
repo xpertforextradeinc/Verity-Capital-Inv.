@@ -29,6 +29,9 @@ export const InstitutionalLayout: React.FC<InstitutionalLayoutProps> = ({
 }) => {
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const publicItems = [
+    { id: 'dashboard', label: 'Dashboard' },
+    { id: 'portfolio', label: 'Portfolio' },
+    { id: 'markets', label: 'Markets' },
     { id: 'investment-plans', label: 'Investment Plans' },
     { id: 'open-account', label: 'Open Account' },
     { id: 'about', label: 'About' },
@@ -38,9 +41,9 @@ export const InstitutionalLayout: React.FC<InstitutionalLayoutProps> = ({
   ];
   const authenticatedItems = [
     { id: 'dashboard', label: 'Dashboard' },
-    { id: 'investment-plans', label: 'Investment Plans' },
     { id: 'portfolio', label: 'Portfolio' },
     { id: 'markets', label: 'Markets' },
+    { id: 'investment-plans', label: 'Investment Plans' },
     { id: 'media-vault', label: 'Asset Vault' },
     { id: 'settings-profile', label: 'Settings' },
     ...(user?.role === 'ADMIN' ? [{ id: 'admin-overview', label: 'Admin' }] : []),
@@ -60,7 +63,7 @@ export const InstitutionalLayout: React.FC<InstitutionalLayoutProps> = ({
     <div className="min-h-screen bg-[#050816] text-zinc-100 font-sans selection:bg-cyan-400/30 selection:text-cyan-200">
       <header className="sticky top-0 z-50 border-b border-white/10 bg-[#050816]/85 backdrop-blur-xl">
         <div className="mx-auto flex h-18 max-w-[1440px] items-center gap-8 px-5 lg:px-10">
-          <button onClick={() => navigate(user ? 'dashboard' : 'home')} className="flex shrink-0 items-center gap-3 text-left">
+          <button onClick={() => navigate('dashboard')} className="flex shrink-0 items-center gap-3 text-left cursor-pointer focus:outline-none">
             <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-cyan-300/50 bg-cyan-300/10 font-mono text-sm font-bold text-cyan-300">VC</span>
             <span className="hidden text-sm font-semibold tracking-[0.16em] text-white sm:block">VERITY-CAPITAL INV</span>
           </button>
