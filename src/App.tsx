@@ -65,7 +65,7 @@ export default function App() {
     if (path === 'admin') return 'admin-overview';
     if (path === 'admin/login') return 'admin-login';
     if (path === 'home') return 'home';
-    return path || 'dashboard';
+    return path || 'home';
   });
   const [selectedInstrument, setSelectedInstrument] = useState<Instrument | null>(null);
   const [isTradeModalOpen, setIsTradeModalOpen] = useState<boolean>(false);
@@ -557,7 +557,7 @@ export default function App() {
   }, [currentTab, isAdminTab, isLoading, supabaseRole]);
 
   useEffect(() => {
-    if (user && (currentTab === 'login' || currentTab === 'onboarding' || currentTab === 'open-account' || (currentTab === 'admin-login' && user.role === 'ADMIN'))) {
+    if (user && (currentTab === 'home' || currentTab === 'login' || currentTab === 'onboarding' || currentTab === 'open-account' || (currentTab === 'admin-login' && user.role === 'ADMIN'))) {
       const destination = user.role === 'ADMIN' ? 'admin-overview' : 'dashboard';
       const route = user.role === 'ADMIN' ? '/admin' : '/dashboard';
       window.history.replaceState({}, '', route);

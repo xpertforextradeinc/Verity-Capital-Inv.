@@ -6,7 +6,7 @@ import multer from 'multer';
 import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
 import { db, roundDecimal, calcOrderTotal } from './server/db.ts';
-import { generateEducationalMarketInsight, executeVerityBrokerChat } from './server/ai.ts';
+import { generateEducationalMarketInsight, executeVerityBrokerChat, generateAdminBillingNote } from './server/ai.ts';
 import { User, Order, Watchlist, TransferRecord, KycProfile, FactualCryptoAsset } from './src/types.ts';
 
 const app = express();
@@ -1236,6 +1236,38 @@ app.patch('/api/v1/admin/compliance/kyc/:userId', requireAdmin, (req: Request, r
     ...(ofacScreening ? { ofacScreening } : {}),
   });
   res.json(updated);
+});
+
+
+// Admin: Generate AI Billing Note
+app.post('/api/v1/admin/ai/generate-note', requireAdmin, async (req: Request, res: Response) => {
+  const { userProfile, promptInstruction } = req.body;
+  if (!userProfile || !promptInstruction) {
+    return res.status(400).json({ error: 'userProfile and promptInstruction are required' });
+  }
+  const note = await generateAdminBillingNote(userProfile, promptInstruction);
+  res.json({ note });
+});
+
+// Admin: Send Notification to User
+app.post('/api/v1/admin/users/:userId/notify', requireAdmin, (req: Request, res: Response) => {
+  const { title, body, type } = req.body;
+  const targetId = req.params.userId;
+  const list = db.notifications.get(targetId) || [];
+  
+  const newNotif = {
+    id: `notif_${Date.now()}`,
+    userId: targetId,
+    type: type || 'SYSTEM',
+    title: title || 'Admin Message',
+    body,
+    createdAt: new Date().toISOString()
+  };
+  
+  list.unshift(newNotif as any);
+  db.notifications.set(targetId, list);
+  
+  res.json({ success: true, notification: newNotif });
 });
 
 // ----------------------------------------------------
