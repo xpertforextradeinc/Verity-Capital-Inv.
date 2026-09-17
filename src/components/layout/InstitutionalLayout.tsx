@@ -66,11 +66,27 @@ export const InstitutionalLayout: React.FC<InstitutionalLayoutProps> = ({
 
   const navigate = (id: string) => {
     setMobileOpen(false);
-    if (!user && ['features', 'testimonials', 'coverage', 'about'].includes(id)) {
-      onSelectTab('home');
-      window.requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
-      return;
+    
+    if (!user) {
+      if (['dashboard', 'asset-vault'].includes(id)) {
+        onOpenAuth?.('login');
+        return;
+      }
+      
+      if (id === 'open-account') {
+        onOpenAuth?.('register');
+        return;
+      }
+
+      if (['features', 'testimonials', 'coverage', 'about'].includes(id)) {
+        onSelectTab('home');
+        setTimeout(() => {
+          document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+        return;
+      }
     }
+    
     onSelectTab(id);
   };
 

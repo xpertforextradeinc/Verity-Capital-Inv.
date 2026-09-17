@@ -20,6 +20,7 @@ import { TickerBar } from './components/common/TickerBar.tsx';
 import { PublicLayout } from './components/layout/PublicLayout.tsx';
 import { InstitutionalLayout } from './components/layout/InstitutionalLayout.tsx';
 import { LandingPage } from './components/public/LandingPage.tsx';
+import { HowItWorks } from './components/public/HowItWorks.tsx';
 import { InvestmentPlans } from './components/public/InvestmentPlans.tsx';
 import { InstitutionalAccess } from './components/public/InstitutionalAccess.tsx';
 import { InfoPages } from './components/public/InfoPages.tsx';
@@ -106,15 +107,6 @@ export default function App() {
       // Attempt to load authenticated user data
       try {
         let currentUser = await api.getCurrentUser();
-        if (!currentUser) {
-          try {
-            const demoRes = await api.switchDemo('CUSTOMER');
-            currentUser = demoRes.user;
-          } catch {
-            currentUser = clientStorageEngine.getDemoUser();
-            clientStorageEngine.setCurrentUser(currentUser);
-          }
-        }
         setUser(currentUser);
 
         if (currentUser) {
@@ -530,7 +522,7 @@ export default function App() {
   };
 
 
-  const publicTabs = ['home', 'markets', 'investment-plans', 'about', 'features', 'testimonials', 'coverage', 'risk-disclosure', 'terms', 'privacy', 'security', 'login', 'onboarding', 'open-account'];
+  const publicTabs = ['home', 'markets', 'how-it-works', 'investment-plans', 'about', 'features', 'testimonials', 'coverage', 'risk-disclosure', 'terms', 'privacy', 'security', 'login', 'onboarding', 'open-account'];
   const isPublicTab = publicTabs.includes(currentTab);
   const isAdminTab = currentTab.startsWith('admin');
   const setPublicRoute = (tab: string) => {
@@ -658,6 +650,15 @@ export default function App() {
 
     if (currentTab === 'investment-plans') {
       return <InvestmentPlans onOpenAuth={(mode) => setPublicRoute(mode === 'login' ? 'login' : 'onboarding')} />;
+    }
+
+    if (currentTab === 'how-it-works') {
+      return (
+        <HowItWorks 
+          onOpenAuth={(mode) => setPublicRoute(mode === 'login' ? 'login' : 'onboarding')}
+          onBack={() => setPublicRoute('home')}
+        />
+      );
     }
 
     if (publicTabs.includes(currentTab) && currentTab !== 'home') {

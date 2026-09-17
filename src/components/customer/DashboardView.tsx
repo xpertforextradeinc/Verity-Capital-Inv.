@@ -87,11 +87,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const [selectedSpecSymbol, setSelectedSpecSymbol] = useState('BTC');
   const [selectedTimeframe, setSelectedTimeframe] = useState<'1D' | '1W' | '1M' | '1Y' | 'ALL'>('1D');
 
-  const totalEquity = portfolio?.totalEquity || 105898.38;
-  const cashBalance = portfolio?.simulatedCashBalance || 65000.00;
-  const invested = portfolio?.investedBalance || 40898.38;
-  const unrealizedPnl = portfolio?.unrealizedPnl || 11435.63;
-  const unrealizedPnlPercent = portfolio?.unrealizedPnlPercent || 21.37;
+  const totalEquity = portfolio?.totalEquity ?? 0.00;
+  const cashBalance = portfolio?.simulatedCashBalance ?? 0.00;
+  const invested = portfolio?.investedBalance ?? 0.00;
+  const unrealizedPnl = portfolio?.unrealizedPnl ?? 0.00;
+  const unrealizedPnlPercent = portfolio?.unrealizedPnlPercent ?? 0.00;
   const isPnlPositive = unrealizedPnl >= 0;
 
   // Generate synthetic performance timeline for chart based on selected timeframe
@@ -169,19 +169,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               Open an Account
             </button>
           </div>
-          <button
-            onClick={async () => {
-              try {
-                await api.login('client@verity-capital.com', 'demo-bypass');
-                window.location.reload();
-              } catch (err) {
-                console.error(err);
-              }
-            }}
-            className="w-full py-2.5 px-4 bg-zinc-900/60 hover:bg-zinc-800 text-zinc-400 hover:text-white text-xs font-medium rounded-xl border border-zinc-800 transition-colors cursor-pointer"
-          >
-            Explore with Demo Account
-          </button>
+
         </div>
       </div>
     );
